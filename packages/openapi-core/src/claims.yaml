@@ -1,0 +1,111 @@
+openapi: 3.1.0
+info:
+  title: Loadline — Claims
+  version: 0.1.0
+  description: Automatic settlement, fraud referral, and expense measurement.
+  license:
+    name: Proprietary
+  x-domain: clm
+  x-product-slug: ai-ins-loadline
+servers:
+- url: https://api.loadline.local
+  description: Local API
+- url: /
+  description: Relative
+security:
+- apiKey: []
+tags:
+- name: Claims
+  description: Automatic settlement, fraud referral, and expense measurement
+paths:
+  /v1/claims/automatic-settlements:
+    post:
+      operationId: settleClaimAutomatically
+      tags:
+      - Claims
+      security:
+      - apiKey: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./claims.schemas.yaml#/components/schemas/AutomaticSettlementCreate
+      responses:
+        '201':
+          description: Claim settled within a cleared coverage and evidence pattern
+          content:
+            application/json:
+              schema:
+                $ref: ./claims.schemas.yaml#/components/schemas/DataEnvelopeAutomaticSettlement
+        '409':
+          description: Referred rather than settled because the coverage or evidence pattern is not cleared,
+            or a coverage anomaly was detected.
+          content:
+            application/json:
+              schema:
+                $ref: ./common/problem.yaml#/components/schemas/Problem
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+      x-repository: AutomaticSettlement
+      summary: Settle Claim Automatically
+  /v1/claims/fraud-referrals:
+    post:
+      operationId: raiseFraudReferral
+      tags:
+      - Claims
+      security:
+      - apiKey: []
+      - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./claims.schemas.yaml#/components/schemas/FraudReferralCreate
+      responses:
+        '201':
+          description: Referral raised with its evidence trail, not only a score
+          content:
+            application/json:
+              schema:
+                $ref: ./claims.schemas.yaml#/components/schemas/DataEnvelopeFraudReferral
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+      x-repository: FraudReferral
+      summary: Raise Fraud Referral
+  /v1/claims/expense-measurements:
+    get:
+      operationId: getExpenseMeasurement
+      tags:
+      - Claims
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: productCode
+        in: query
+        schema:
+          type: string
+      - name: period
+        in: query
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Measured cost per policy issued and per claim settled, the evidence base for the
+            loading for expense.
+          content:
+            application/json:
+              schema:
+                $ref: ./claims.schemas.yaml#/components/schemas/DataEnvelopeExpenseMeasurement
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+      x-repository: ExpenseMeasurement
+      summary: Get Expense Measurement
+components:
+  securitySchemes:
+    apiKey:
+      $ref: ./common/security.yaml#/components/securitySchemes/apiKey
+    bearerAuth:
+      $ref: ./common/security.yaml#/components/securitySchemes/bearerAuth
+  parameters: {}

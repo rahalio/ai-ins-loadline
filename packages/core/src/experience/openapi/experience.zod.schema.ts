@@ -1,0 +1,579 @@
+import { makeApi, Zodios, type ZodiosOptions } from '@zodios/core';
+import { z } from 'zod';
+
+const defineCohort_Body = z
+  .object({
+    programmeId: z.string(),
+    cohortKind: z.enum(['engaged', 'matched_unengaged']),
+    matchedOn: z.array(z.string()).optional(),
+    selectionSeparationMethod: z.string(),
+    observationWindowMonths: z.number().int().optional(),
+    comparableCohortId: z.string().optional(),
+  })
+  .passthrough();
+const creditExpectedClaimsSaving_Body = z
+  .object({
+    cohortId: z.string(),
+    premiumTerm: z.enum([
+      'expected_claims',
+      'loading_for_risk',
+      'loading_for_expense',
+    ]),
+    creditedBasisPoints: z.number(),
+    behaviouralEffect: z.number().optional(),
+    selectionEffectRemoved: z.number().optional(),
+    signedOffBy: z.string(),
+    appliesFromPeriod: z.string().optional(),
+  })
+  .passthrough();
+const Problem = z
+  .object({
+    type: z.string().url(),
+    title: z.string(),
+    status: z.number().int(),
+    detail: z.string(),
+    instance: z.string().url(),
+    code: z.string(),
+  })
+  .partial()
+  .passthrough();
+const CohortDefinition = z
+  .object({
+    id: z.string(),
+    programmeId: z.string(),
+    cohortKind: z.enum(['engaged', 'matched_unengaged']),
+    matchedOn: z.array(z.string()).optional(),
+    selectionSeparationMethod: z
+      .enum([
+        'propensity_matching',
+        'stratified_comparison',
+        'randomised_offer',
+        'instrumental_variable',
+      ])
+      .optional(),
+    memberCount: z.number().int().optional(),
+    observationWindowMonths: z.number().int().optional(),
+    comparableCohortId: z.string().optional(),
+    createdAt: z.string().datetime({ offset: true }).optional(),
+    updatedAt: z.string().datetime({ offset: true }).optional(),
+  })
+  .passthrough();
+const ResponseMeta = z
+  .object({
+    requestId: z.string().uuid(),
+    correlationId: z.string(),
+    generatedAt: z.string().datetime({ offset: true }),
+  })
+  .partial()
+  .passthrough();
+const ListEnvelopeCohortDefinition = z
+  .object({
+    data: z
+      .object({
+        items: z.array(
+          z
+            .object({
+              id: z.string(),
+              programmeId: z.string(),
+              cohortKind: z.enum(['engaged', 'matched_unengaged']),
+              matchedOn: z.array(z.string()).optional(),
+              selectionSeparationMethod: z
+                .enum([
+                  'propensity_matching',
+                  'stratified_comparison',
+                  'randomised_offer',
+                  'instrumental_variable',
+                ])
+                .optional(),
+              memberCount: z.number().int().optional(),
+              observationWindowMonths: z.number().int().optional(),
+              comparableCohortId: z.string().optional(),
+              createdAt: z.string().datetime({ offset: true }).optional(),
+              updatedAt: z.string().datetime({ offset: true }).optional(),
+            })
+            .passthrough()
+        ),
+        nextCursor: z.string().optional(),
+      })
+      .passthrough(),
+    meta: z
+      .object({
+        requestId: z.string().uuid(),
+        correlationId: z.string(),
+        generatedAt: z.string().datetime({ offset: true }),
+      })
+      .partial()
+      .passthrough(),
+  })
+  .passthrough();
+const CohortDefinitionCreate = z
+  .object({
+    programmeId: z.string(),
+    cohortKind: z.enum(['engaged', 'matched_unengaged']),
+    matchedOn: z.array(z.string()).optional(),
+    selectionSeparationMethod: z.string(),
+    observationWindowMonths: z.number().int().optional(),
+    comparableCohortId: z.string().optional(),
+  })
+  .passthrough();
+const DataEnvelopeCohortDefinition = z
+  .object({
+    data: z
+      .object({
+        id: z.string(),
+        programmeId: z.string(),
+        cohortKind: z.enum(['engaged', 'matched_unengaged']),
+        matchedOn: z.array(z.string()).optional(),
+        selectionSeparationMethod: z
+          .enum([
+            'propensity_matching',
+            'stratified_comparison',
+            'randomised_offer',
+            'instrumental_variable',
+          ])
+          .optional(),
+        memberCount: z.number().int().optional(),
+        observationWindowMonths: z.number().int().optional(),
+        comparableCohortId: z.string().optional(),
+        createdAt: z.string().datetime({ offset: true }).optional(),
+        updatedAt: z.string().datetime({ offset: true }).optional(),
+      })
+      .passthrough(),
+    meta: z
+      .object({
+        requestId: z.string().uuid(),
+        correlationId: z.string(),
+        generatedAt: z.string().datetime({ offset: true }),
+      })
+      .partial()
+      .passthrough(),
+  })
+  .passthrough();
+const Money = z
+  .object({ amount: z.number(), currency: z.string() })
+  .passthrough();
+const ExperienceObservation = z
+  .object({
+    cohortId: z.string(),
+    period: z.string(),
+    exposureYears: z.number().optional(),
+    actualClaims: z
+      .object({ amount: z.number(), currency: z.string() })
+      .passthrough()
+      .optional(),
+    expectedClaims: z
+      .object({ amount: z.number(), currency: z.string() })
+      .passthrough()
+      .optional(),
+    actualToExpected: z.number().optional(),
+    lapseRate: z.number().optional(),
+    persistencyRate: z.number().optional(),
+    unengagedActualToExpected: z.number().optional(),
+    estimatedSelectionEffect: z.number().optional(),
+    windowComplete: z.boolean().optional(),
+    createdAt: z.string().datetime({ offset: true }).optional(),
+    updatedAt: z.string().datetime({ offset: true }).optional(),
+  })
+  .passthrough();
+const ListEnvelopeExperienceObservation = z
+  .object({
+    data: z
+      .object({
+        items: z.array(
+          z
+            .object({
+              cohortId: z.string(),
+              period: z.string(),
+              exposureYears: z.number().optional(),
+              actualClaims: z
+                .object({ amount: z.number(), currency: z.string() })
+                .passthrough()
+                .optional(),
+              expectedClaims: z
+                .object({ amount: z.number(), currency: z.string() })
+                .passthrough()
+                .optional(),
+              actualToExpected: z.number().optional(),
+              lapseRate: z.number().optional(),
+              persistencyRate: z.number().optional(),
+              unengagedActualToExpected: z.number().optional(),
+              estimatedSelectionEffect: z.number().optional(),
+              windowComplete: z.boolean().optional(),
+              createdAt: z.string().datetime({ offset: true }).optional(),
+              updatedAt: z.string().datetime({ offset: true }).optional(),
+            })
+            .passthrough()
+        ),
+        nextCursor: z.string().optional(),
+      })
+      .passthrough(),
+    meta: z
+      .object({
+        requestId: z.string().uuid(),
+        correlationId: z.string(),
+        generatedAt: z.string().datetime({ offset: true }),
+      })
+      .partial()
+      .passthrough(),
+  })
+  .passthrough();
+const PremiumTerm = z.enum([
+  'expected_claims',
+  'loading_for_risk',
+  'loading_for_expense',
+]);
+const SavingsCreditCreate = z
+  .object({
+    cohortId: z.string(),
+    premiumTerm: z.enum([
+      'expected_claims',
+      'loading_for_risk',
+      'loading_for_expense',
+    ]),
+    creditedBasisPoints: z.number(),
+    behaviouralEffect: z.number().optional(),
+    selectionEffectRemoved: z.number().optional(),
+    signedOffBy: z.string(),
+    appliesFromPeriod: z.string().optional(),
+  })
+  .passthrough();
+const SavingsCredit = z
+  .object({
+    id: z.string(),
+    cohortId: z.string(),
+    premiumTerm: z.enum([
+      'expected_claims',
+      'loading_for_risk',
+      'loading_for_expense',
+    ]),
+    creditedBasisPoints: z.number().optional(),
+    behaviouralEffect: z.number().optional(),
+    selectionEffectRemoved: z.number().optional(),
+    persistencyImpact: z.number().optional(),
+    status: z.enum(['credited', 'refused', 'withdrawn']),
+    signedOffBy: z.string().optional(),
+    appliesFromPeriod: z.string().optional(),
+    createdAt: z.string().datetime({ offset: true }).optional(),
+    updatedAt: z.string().datetime({ offset: true }).optional(),
+  })
+  .passthrough();
+const DataEnvelopeSavingsCredit = z
+  .object({
+    data: z
+      .object({
+        id: z.string(),
+        cohortId: z.string(),
+        premiumTerm: z.enum([
+          'expected_claims',
+          'loading_for_risk',
+          'loading_for_expense',
+        ]),
+        creditedBasisPoints: z.number().optional(),
+        behaviouralEffect: z.number().optional(),
+        selectionEffectRemoved: z.number().optional(),
+        persistencyImpact: z.number().optional(),
+        status: z.enum(['credited', 'refused', 'withdrawn']),
+        signedOffBy: z.string().optional(),
+        appliesFromPeriod: z.string().optional(),
+        createdAt: z.string().datetime({ offset: true }).optional(),
+        updatedAt: z.string().datetime({ offset: true }).optional(),
+      })
+      .passthrough(),
+    meta: z
+      .object({
+        requestId: z.string().uuid(),
+        correlationId: z.string(),
+        generatedAt: z.string().datetime({ offset: true }),
+      })
+      .partial()
+      .passthrough(),
+  })
+  .passthrough();
+
+export const schemas: any = {
+  defineCohort_Body,
+  creditExpectedClaimsSaving_Body,
+  Problem,
+  CohortDefinition,
+  ResponseMeta,
+  ListEnvelopeCohortDefinition,
+  CohortDefinitionCreate,
+  DataEnvelopeCohortDefinition,
+  Money,
+  ExperienceObservation,
+  ListEnvelopeExperienceObservation,
+  PremiumTerm,
+  SavingsCreditCreate,
+  SavingsCredit,
+  DataEnvelopeSavingsCredit,
+};
+
+const endpoints = makeApi([
+  {
+    method: 'get',
+    path: '/v1/experience/cohorts',
+    alias: 'listCohortDefinitions',
+    requestFormat: 'json',
+    parameters: [
+      {
+        name: 'cursor',
+        type: 'Query',
+        schema: z.string().optional(),
+      },
+      {
+        name: 'limit',
+        type: 'Query',
+        schema: z.number().int().gte(1).lte(200).optional().default(50),
+      },
+      {
+        name: 'programmeId',
+        type: 'Query',
+        schema: z.string().optional(),
+      },
+    ],
+    response: z
+      .object({
+        data: z
+          .object({
+            items: z.array(
+              z
+                .object({
+                  id: z.string(),
+                  programmeId: z.string(),
+                  cohortKind: z.enum(['engaged', 'matched_unengaged']),
+                  matchedOn: z.array(z.string()).optional(),
+                  selectionSeparationMethod: z
+                    .enum([
+                      'propensity_matching',
+                      'stratified_comparison',
+                      'randomised_offer',
+                      'instrumental_variable',
+                    ])
+                    .optional(),
+                  memberCount: z.number().int().optional(),
+                  observationWindowMonths: z.number().int().optional(),
+                  comparableCohortId: z.string().optional(),
+                  createdAt: z.string().datetime({ offset: true }).optional(),
+                  updatedAt: z.string().datetime({ offset: true }).optional(),
+                })
+                .passthrough()
+            ),
+            nextCursor: z.string().optional(),
+          })
+          .passthrough(),
+        meta: z
+          .object({
+            requestId: z.string().uuid(),
+            correlationId: z.string(),
+            generatedAt: z.string().datetime({ offset: true }),
+          })
+          .partial()
+          .passthrough(),
+      })
+      .passthrough(),
+  },
+  {
+    method: 'post',
+    path: '/v1/experience/cohorts',
+    alias: 'defineCohort',
+    requestFormat: 'json',
+    parameters: [
+      {
+        name: 'body',
+        type: 'Body',
+        schema: defineCohort_Body,
+      },
+    ],
+    response: z
+      .object({
+        data: z
+          .object({
+            id: z.string(),
+            programmeId: z.string(),
+            cohortKind: z.enum(['engaged', 'matched_unengaged']),
+            matchedOn: z.array(z.string()).optional(),
+            selectionSeparationMethod: z
+              .enum([
+                'propensity_matching',
+                'stratified_comparison',
+                'randomised_offer',
+                'instrumental_variable',
+              ])
+              .optional(),
+            memberCount: z.number().int().optional(),
+            observationWindowMonths: z.number().int().optional(),
+            comparableCohortId: z.string().optional(),
+            createdAt: z.string().datetime({ offset: true }).optional(),
+            updatedAt: z.string().datetime({ offset: true }).optional(),
+          })
+          .passthrough(),
+        meta: z
+          .object({
+            requestId: z.string().uuid(),
+            correlationId: z.string(),
+            generatedAt: z.string().datetime({ offset: true }),
+          })
+          .partial()
+          .passthrough(),
+      })
+      .passthrough(),
+    errors: [
+      {
+        status: 422,
+        description: `Rejected when an engaged cohort has no comparable unengaged cohort or no stated method for separating self-selection from behaviour.`,
+        schema: z
+          .object({
+            type: z.string().url(),
+            title: z.string(),
+            status: z.number().int(),
+            detail: z.string(),
+            instance: z.string().url(),
+            code: z.string(),
+          })
+          .partial()
+          .passthrough(),
+      },
+    ],
+  },
+  {
+    method: 'get',
+    path: '/v1/experience/observations',
+    alias: 'listExperienceObservations',
+    requestFormat: 'json',
+    parameters: [
+      {
+        name: 'cursor',
+        type: 'Query',
+        schema: z.string().optional(),
+      },
+      {
+        name: 'limit',
+        type: 'Query',
+        schema: z.number().int().gte(1).lte(200).optional().default(50),
+      },
+      {
+        name: 'cohortId',
+        type: 'Query',
+        schema: z.string().optional(),
+      },
+      {
+        name: 'period',
+        type: 'Query',
+        schema: z.string().optional(),
+      },
+    ],
+    response: z
+      .object({
+        data: z
+          .object({
+            items: z.array(
+              z
+                .object({
+                  cohortId: z.string(),
+                  period: z.string(),
+                  exposureYears: z.number().optional(),
+                  actualClaims: z
+                    .object({ amount: z.number(), currency: z.string() })
+                    .passthrough()
+                    .optional(),
+                  expectedClaims: z
+                    .object({ amount: z.number(), currency: z.string() })
+                    .passthrough()
+                    .optional(),
+                  actualToExpected: z.number().optional(),
+                  lapseRate: z.number().optional(),
+                  persistencyRate: z.number().optional(),
+                  unengagedActualToExpected: z.number().optional(),
+                  estimatedSelectionEffect: z.number().optional(),
+                  windowComplete: z.boolean().optional(),
+                  createdAt: z.string().datetime({ offset: true }).optional(),
+                  updatedAt: z.string().datetime({ offset: true }).optional(),
+                })
+                .passthrough()
+            ),
+            nextCursor: z.string().optional(),
+          })
+          .passthrough(),
+        meta: z
+          .object({
+            requestId: z.string().uuid(),
+            correlationId: z.string(),
+            generatedAt: z.string().datetime({ offset: true }),
+          })
+          .partial()
+          .passthrough(),
+      })
+      .passthrough(),
+  },
+  {
+    method: 'post',
+    path: '/v1/experience/savings-credits',
+    alias: 'creditExpectedClaimsSaving',
+    requestFormat: 'json',
+    parameters: [
+      {
+        name: 'body',
+        type: 'Body',
+        schema: creditExpectedClaimsSaving_Body,
+      },
+    ],
+    response: z
+      .object({
+        data: z
+          .object({
+            id: z.string(),
+            cohortId: z.string(),
+            premiumTerm: z.enum([
+              'expected_claims',
+              'loading_for_risk',
+              'loading_for_expense',
+            ]),
+            creditedBasisPoints: z.number().optional(),
+            behaviouralEffect: z.number().optional(),
+            selectionEffectRemoved: z.number().optional(),
+            persistencyImpact: z.number().optional(),
+            status: z.enum(['credited', 'refused', 'withdrawn']),
+            signedOffBy: z.string().optional(),
+            appliesFromPeriod: z.string().optional(),
+            createdAt: z.string().datetime({ offset: true }).optional(),
+            updatedAt: z.string().datetime({ offset: true }).optional(),
+          })
+          .passthrough(),
+        meta: z
+          .object({
+            requestId: z.string().uuid(),
+            correlationId: z.string(),
+            generatedAt: z.string().datetime({ offset: true }),
+          })
+          .partial()
+          .passthrough(),
+      })
+      .passthrough(),
+    errors: [
+      {
+        status: 409,
+        description: `Refused because the observation window is incomplete, the selection effect is unseparated, or persistency deteriorated materially.`,
+        schema: z
+          .object({
+            type: z.string().url(),
+            title: z.string(),
+            status: z.number().int(),
+            detail: z.string(),
+            instance: z.string().url(),
+            code: z.string(),
+          })
+          .partial()
+          .passthrough(),
+      },
+    ],
+  },
+]);
+
+export const api: any = new Zodios(
+  'https://api.ddd-codegen-starter.local/v1',
+  endpoints
+);
+
+export function createApiClient(baseUrl: string, options?: ZodiosOptions): any {
+  return new Zodios(baseUrl, endpoints, options);
+}

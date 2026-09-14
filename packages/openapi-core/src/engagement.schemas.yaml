@@ -1,0 +1,227 @@
+openapi: 3.1.0
+info:
+  title: Loadline — Engagement schemas
+  version: 0.1.0
+  x-domain: eng
+paths: {}
+components:
+  schemas:
+    DataEnvelopeEngagementProgramme:
+      type: object
+      required:
+      - data
+      - meta
+      properties:
+        data:
+          $ref: '#/components/schemas/EngagementProgramme'
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta
+    DataEnvelopeTouchpointEvent:
+      type: object
+      required:
+      - data
+      - meta
+      properties:
+        data:
+          $ref: '#/components/schemas/TouchpointEvent'
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta
+    DataEnvelopeTouchpointFrequency:
+      type: object
+      required:
+      - data
+      - meta
+      properties:
+        data:
+          $ref: '#/components/schemas/TouchpointFrequency'
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta
+    EngagementProgramme:
+      type: object
+      required:
+      - id
+      - name
+      - premiumTermTargeted
+      - state
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        premiumTermTargeted:
+          $ref: ./common/loadline-primitives.yaml#/components/schemas/PremiumTerm
+        interventionKind:
+          type: string
+          enum:
+          - activity_nudge
+          - chronic_condition_management
+          - driving_feedback
+          - home_risk_alert
+          - screening_reminder
+          - financial_wellbeing
+        assumedTouchpointFrequency:
+          type: string
+        state:
+          type: string
+          enum:
+          - design
+          - boundary_review
+          - live
+          - suspended
+          - closed
+        boundaryReview:
+          type: object
+          properties:
+            medicalAdviceBoundaryCleared:
+              type: boolean
+            inducementBoundaryCleared:
+              type: boolean
+            jurisdictions:
+              type: array
+              items:
+                type: string
+            officerId:
+              type: string
+        enrolledCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      x-dynamodb:
+        domain: ENGAGEMENT
+        entityType: ENGAGEMENT_PROGRAMME
+        entityToken: ENGAGEMENT_PROGRAMME
+        skPrefix: ENGAGEMENT_PROGRAMME
+        pkPattern: entity
+        pkPatternTemplate: ENGAGEMENT_PROGRAMME#${programmeId}
+        skPatternTemplate: METADATA
+        isChildEntity: false
+        gsi1Enabled: false
+        gsi2Enabled: false
+        gsi3Enabled: false
+        softDeleteEnabled: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        tableType: core
+    EngagementProgrammeCreate:
+      type: object
+      required:
+      - name
+      - premiumTermTargeted
+      - interventionKind
+      properties:
+        name:
+          type: string
+        premiumTermTargeted:
+          $ref: ./common/loadline-primitives.yaml#/components/schemas/PremiumTerm
+        interventionKind:
+          type: string
+        assumedTouchpointFrequency:
+          type: string
+        jurisdictions:
+          type: array
+          items:
+            type: string
+    ListEnvelopeEngagementProgramme:
+      type: object
+      required:
+      - data
+      - meta
+      properties:
+        data:
+          type: object
+          required:
+          - items
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/EngagementProgramme'
+            nextCursor:
+              type: string
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta
+    TouchpointEvent:
+      type: object
+      required:
+      - id
+      - enrolmentId
+      - touchpointKind
+      - occurredAt
+      properties:
+        id:
+          type: string
+        enrolmentId:
+          type: string
+        touchpointKind:
+          type: string
+          enum:
+          - data_sync
+          - nudge_delivered
+          - nudge_acted
+          - coaching_session
+          - screening_completed
+          - alert_resolved
+        occurredAt:
+          type: string
+          format: date-time
+        consentRecordId:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      x-dynamodb:
+        domain: ENGAGEMENT
+        entityType: TOUCHPOINT_EVENT
+        entityToken: TOUCHPOINT_EVENT
+        skPrefix: TOUCHPOINT_EVENT
+        pkPattern: entity
+        pkPatternTemplate: TOUCHPOINT_EVENT#${touchpointId}
+        skPatternTemplate: METADATA
+        isChildEntity: false
+        gsi1Enabled: false
+        gsi2Enabled: false
+        gsi3Enabled: false
+        softDeleteEnabled: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        tableType: core
+    TouchpointEventCreate:
+      type: object
+      required:
+      - enrolmentId
+      - touchpointKind
+      - occurredAt
+      properties:
+        enrolmentId:
+          type: string
+        touchpointKind:
+          type: string
+        occurredAt:
+          type: string
+          format: date-time
+        consentRecordId:
+          type: string
+    TouchpointFrequency:
+      type: object
+      properties:
+        enrolmentId:
+          type: string
+        assumedFrequency:
+          type: string
+        measuredFrequency:
+          type: string
+        measurementWindow:
+          type: string
+        meetsAssumption:
+          type: boolean
+        consentGapDays:
+          type: integer
+        riskLoadingSupported:
+          type: boolean

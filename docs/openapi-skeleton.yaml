@@ -1,0 +1,2032 @@
+openapi: 3.0.3
+info:
+  title: Loadline
+  version: 0.1.0
+  description: >-
+    Premium-composition platform for life and health risk. Every production model
+    declares the term of the price it acts on — expected claims, loading for risk,
+    or loading for expense — every rating factor carries a per-jurisdiction
+    permitted-use position, and no offer may leave the permitted variation
+    envelope. Engagement touchpoints and realised cohort experience decide whether
+    an expected-claims saving may be credited to price.
+  x-product-slug: ai-ins-loadline
+  x-source: ai-in-insurance/h2o_ai-session2-h2oaiworldlondon2018-madsenv2-181102025107/
+servers:
+  - url: https://api.example.com
+tags:
+  - name: Scoring
+    description: Consent resolution, risk scoring, and score contributions
+  - name: Composition
+    description: Premium composition, commercial calibration, and variation gate
+  - name: Permitting
+    description: Factor permits per jurisdiction and model validation queue
+  - name: Engagement
+    description: Programmes, enrolment, and the touchpoint ledger
+  - name: Experience
+    description: Cohort definitions and realised claims, lapse, and persistency
+  - name: Claims
+    description: Automatic settlement, fraud referral, and expense measurement
+  - name: Reinsurance
+    description: Cession and cohort experience against the treaty pricing basis
+paths:
+  /v1/risk-subjects/{riskSubjectId}/consent:
+    parameters:
+      - $ref: "#/components/parameters/RiskSubjectId"
+    get:
+      operationId: resolveConsentState
+      tags: [Scoring]
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - name: purpose
+          in: query
+          schema:
+            $ref: "#/components/schemas/ProcessingPurpose"
+      responses:
+        "200":
+          description: Which data sources may feed which decision, at point of use
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeConsentState"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      operationId: recordConsentChange
+      tags: [Scoring]
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConsentRecordCreate"
+      responses:
+        "201":
+          description: >-
+            Consent granted or withdrawn. A withdrawal triggers the defined
+            pricing and servicing fallback rather than a service failure.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeConsentRecord"
+  /v1/scores:
+    post:
+      operationId: scoreRiskSubject
+      tags: [Scoring]
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ScoreRequest"
+      responses:
+        "200":
+          description: Score contributions, each attributed to one premium term
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeScoreResult"
+        "409":
+          description: >-
+            Scoring refused. Raised when a required feature has no permitted-use
+            position for the jurisdiction, when consent is absent for the purpose,
+            or when restricted health data such as genetic results is in scope.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+  /v1/scores/{scoreId}/explanation:
+    parameters:
+      - $ref: "#/components/parameters/ScoreId"
+    get:
+      operationId: getScoreExplanation
+      tags: [Scoring]
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: >-
+            Factor-level explanation mapped to the rating basis, suitable for an
+            underwriter and for disclosure to the applicant.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeScoreExplanation"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /v1/compositions:
+    post:
+      operationId: composePremium
+      tags: [Composition]
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PremiumCompositionCreate"
+      responses:
+        "201":
+          description: >-
+            Technical cost assembled from expected claims, loading for risk, and
+            loading for expense, each traceable to its contributing models.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopePremiumComposition"
+        "422":
+          description: >-
+            Rejected when a contributing model has not declared its premium term
+            or when a risk-loading reduction cites touchpoint frequency without
+            supporting touchpoint evidence.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+  /v1/compositions/{compositionId}/calibration:
+    parameters:
+      - $ref: "#/components/parameters/CompositionId"
+    post:
+      operationId: applyCommercialCalibration
+      tags: [Composition]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CommercialCalibrationCreate"
+      responses:
+        "200":
+          description: >-
+            Attributed step from technical cost to offered price, keeping pricing
+            distinguishable from costing.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeCommercialCalibration"
+        "403":
+          description: Calibration beyond the approver's threshold requires escalation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+  /v1/compositions/{compositionId}/offer:
+    parameters:
+      - $ref: "#/components/parameters/CompositionId"
+    post:
+      operationId: issuePriceOffer
+      tags: [Composition]
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      responses:
+        "201":
+          description: Offer issued within the permitted variation envelope
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopePriceOffer"
+        "409":
+          description: >-
+            Offer refused by the permitted variation gate because the magnitude or
+            frequency of variation exceeds what the jurisdiction permits for this
+            product.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+  /v1/variation-envelopes:
+    get:
+      operationId: listVariationEnvelopes
+      tags: [Composition]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+        - name: jurisdiction
+          in: query
+          schema:
+            type: string
+            example: NL
+        - name: productCode
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Permitted magnitude and frequency of price variation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListEnvelopeVariationEnvelope"
+    post:
+      operationId: setVariationEnvelope
+      tags: [Composition]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VariationEnvelopeCreate"
+      responses:
+        "201":
+          description: Envelope recorded with its filing or rule basis
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeVariationEnvelope"
+  /v1/permitting/factor-permits:
+    get:
+      operationId: listFactorPermits
+      tags: [Permitting]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+        - name: jurisdiction
+          in: query
+          schema:
+            type: string
+        - name: position
+          in: query
+          schema:
+            type: string
+            enum: [permitted, permitted_with_conditions, prohibited, undetermined]
+        - name: dataCategory
+          in: query
+          schema:
+            $ref: "#/components/schemas/DataCategory"
+      responses:
+        "200":
+          description: Per-factor, per-jurisdiction permitted-use positions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListEnvelopeFactorPermit"
+    post:
+      operationId: recordFactorPermit
+      tags: [Permitting]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FactorPermitCreate"
+      responses:
+        "201":
+          description: Position recorded by a named compliance officer
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeFactorPermit"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+  /v1/permitting/models:
+    get:
+      operationId: listRiskModels
+      tags: [Permitting]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+        - name: premiumTerm
+          in: query
+          schema:
+            $ref: "#/components/schemas/PremiumTerm"
+        - name: state
+          in: query
+          schema:
+            type: string
+            enum: [candidate, awaiting_validation, validated, in_production, withdrawn]
+      responses:
+        "200":
+          description: Models with declared premium term and validation state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListEnvelopeRiskModel"
+    post:
+      operationId: submitRiskModel
+      tags: [Permitting]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RiskModelCreate"
+      responses:
+        "201":
+          description: Model queued for validation with its declared premium term
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeRiskModel"
+        "422":
+          description: >-
+            Rejected because no premium term was declared. A model that cannot
+            name the term of the price it acts on may not be deployed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+  /v1/permitting/models/{modelId}/validation:
+    parameters:
+      - $ref: "#/components/parameters/ModelId"
+    post:
+      operationId: validateRiskModel
+      tags: [Permitting]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ModelValidationCreate"
+      responses:
+        "200":
+          description: Validation outcome and production permission by jurisdiction
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeModelValidation"
+  /v1/permitting/validation-queue:
+    get:
+      operationId: getValidationQueue
+      tags: [Permitting]
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: >-
+            Queue depth and ageing for candidate models, reported as operational
+            risk since model production outpaces validation capacity.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeValidationQueue"
+  /v1/engagement/programmes:
+    get:
+      operationId: listEngagementProgrammes
+      tags: [Engagement]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+        - name: state
+          in: query
+          schema:
+            type: string
+            enum: [design, boundary_review, live, suspended, closed]
+      responses:
+        "200":
+          description: Engagement programmes with boundary review outcomes
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListEnvelopeEngagementProgramme"
+    post:
+      operationId: createEngagementProgramme
+      tags: [Engagement]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EngagementProgrammeCreate"
+      responses:
+        "201":
+          description: >-
+            Programme created pending review against the medical-advice and
+            inducement boundaries for each jurisdiction.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeEngagementProgramme"
+  /v1/engagement/touchpoints:
+    post:
+      operationId: recordTouchpointEvent
+      tags: [Engagement]
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TouchpointEventCreate"
+      responses:
+        "201":
+          description: Touchpoint recorded against the enrolment ledger
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeTouchpointEvent"
+  /v1/engagement/enrolments/{enrolmentId}/frequency:
+    parameters:
+      - $ref: "#/components/parameters/EnrolmentId"
+    get:
+      operationId: getTouchpointFrequency
+      tags: [Engagement]
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: >-
+            Measured touchpoint frequency against the frequency assumed when the
+            risk loading was reduced.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeTouchpointFrequency"
+  /v1/experience/cohorts:
+    get:
+      operationId: listCohortDefinitions
+      tags: [Experience]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+        - name: programmeId
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Engaged and matched unengaged cohort definitions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListEnvelopeCohortDefinition"
+    post:
+      operationId: defineCohort
+      tags: [Experience]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CohortDefinitionCreate"
+      responses:
+        "201":
+          description: Cohort defined with its selection-effect separation method
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeCohortDefinition"
+        "422":
+          description: >-
+            Rejected when an engaged cohort has no comparable unengaged cohort or
+            no stated method for separating self-selection from behaviour.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+  /v1/experience/observations:
+    get:
+      operationId: listExperienceObservations
+      tags: [Experience]
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+        - name: cohortId
+          in: query
+          schema:
+            type: string
+        - name: period
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: >-
+            Realised claims, lapse, and persistency for the cohort against the
+            priced assumption.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListEnvelopeExperienceObservation"
+  /v1/experience/savings-credits:
+    post:
+      operationId: creditExpectedClaimsSaving
+      tags: [Experience]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SavingsCreditCreate"
+      responses:
+        "201":
+          description: >-
+            Expected-claims saving credited to the pricing basis after actuarial
+            sign-off on observed cohort experience.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeSavingsCredit"
+        "409":
+          description: >-
+            Refused because the observation window is incomplete, the selection
+            effect is unseparated, or persistency deteriorated materially.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+  /v1/claims/automatic-settlements:
+    post:
+      operationId: settleClaimAutomatically
+      tags: [Claims]
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AutomaticSettlementCreate"
+      responses:
+        "201":
+          description: Claim settled within a cleared coverage and evidence pattern
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeAutomaticSettlement"
+        "409":
+          description: >-
+            Referred rather than settled because the coverage or evidence pattern
+            is not cleared, or a coverage anomaly was detected.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+  /v1/claims/fraud-referrals:
+    post:
+      operationId: raiseFraudReferral
+      tags: [Claims]
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FraudReferralCreate"
+      responses:
+        "201":
+          description: Referral raised with its evidence trail, not only a score
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeFraudReferral"
+  /v1/claims/expense-measurements:
+    get:
+      operationId: getExpenseMeasurement
+      tags: [Claims]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: productCode
+          in: query
+          schema:
+            type: string
+        - name: period
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: >-
+            Measured cost per policy issued and per claim settled, the evidence
+            base for the loading for expense.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeExpenseMeasurement"
+  /v1/reinsurance/cession-experience:
+    get:
+      operationId: getCessionExperience
+      tags: [Reinsurance]
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      parameters:
+        - name: treatyId
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: cohortId
+          in: query
+          schema:
+            type: string
+        - name: period
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Cohort experience against the treaty pricing basis
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeCessionExperience"
+  /v1/decisions/{decisionId}/review:
+    parameters:
+      - $ref: "#/components/parameters/DecisionId"
+    post:
+      operationId: requestHumanReview
+      tags: [Scoring]
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [requestedBy, grounds]
+              properties:
+                requestedBy:
+                  type: string
+                  enum: [applicant, policyholder, claimant, distributor, underwriter]
+                grounds:
+                  type: string
+      responses:
+        "201":
+          description: >-
+            Human review opened on an automated declinature, exclusion, or claims
+            decision, with the factor explanation attached.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataEnvelopeReviewDecision"
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    Cursor:
+      name: cursor
+      in: query
+      schema:
+        type: string
+    Limit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 200
+        default: 50
+    RiskSubjectId:
+      name: riskSubjectId
+      in: path
+      required: true
+      schema:
+        type: string
+    ScoreId:
+      name: scoreId
+      in: path
+      required: true
+      schema:
+        type: string
+    CompositionId:
+      name: compositionId
+      in: path
+      required: true
+      schema:
+        type: string
+    ModelId:
+      name: modelId
+      in: path
+      required: true
+      schema:
+        type: string
+    EnrolmentId:
+      name: enrolmentId
+      in: path
+      required: true
+      schema:
+        type: string
+    DecisionId:
+      name: decisionId
+      in: path
+      required: true
+      schema:
+        type: string
+  responses:
+    Unauthorized:
+      description: Missing or invalid credentials
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    UnprocessableEntity:
+      description: Validation failed
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+  schemas:
+    ResponseMeta:
+      type: object
+      required: [requestId, timestamp]
+      properties:
+        requestId:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+    Problem:
+      type: object
+      required: [type, title, status]
+      properties:
+        type:
+          type: string
+          format: uri
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+    Money:
+      type: object
+      required: [amount, currency]
+      properties:
+        amount:
+          type: number
+          format: double
+        currency:
+          type: string
+          example: EUR
+    PremiumTerm:
+      type: string
+      description: The term of the price a model or lever acts on
+      enum: [expected_claims, loading_for_risk, loading_for_expense]
+    DataCategory:
+      type: string
+      enum:
+        - connected_life
+        - connected_car
+        - connected_home
+        - connected_finance
+        - medical_evidence
+        - genetic
+        - epigenetic
+        - microbiome
+        - geographic
+        - declared_lifestyle
+        - population_table
+    ProcessingPurpose:
+      type: string
+      enum:
+        - underwriting
+        - pricing
+        - renewal_pricing
+        - engagement_service
+        - claims_assessment
+        - fraud_detection
+        - experience_study
+    ConsentRecord:
+      type: object
+      required: [id, riskSubjectId, dataCategory, state]
+      properties:
+        id:
+          type: string
+        riskSubjectId:
+          type: string
+        dataCategory:
+          $ref: "#/components/schemas/DataCategory"
+        purposes:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProcessingPurpose"
+        state:
+          type: string
+          enum: [granted, withdrawn, expired]
+        lawfulBasis:
+          type: string
+          enum: [explicit_consent, contract, legitimate_interest, vital_interest]
+        grantedAt:
+          type: string
+          format: date-time
+        withdrawnAt:
+          type: string
+          format: date-time
+        fallbackApplied:
+          type: string
+          description: Pricing and servicing fallback invoked on withdrawal
+    ConsentRecordCreate:
+      type: object
+      required: [dataCategory, state, purposes]
+      properties:
+        dataCategory:
+          $ref: "#/components/schemas/DataCategory"
+        purposes:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProcessingPurpose"
+        state:
+          type: string
+          enum: [granted, withdrawn, expired]
+        lawfulBasis:
+          type: string
+    ConsentState:
+      type: object
+      properties:
+        riskSubjectId:
+          type: string
+        purpose:
+          $ref: "#/components/schemas/ProcessingPurpose"
+        permittedCategories:
+          type: array
+          items:
+            $ref: "#/components/schemas/DataCategory"
+        blockedCategories:
+          type: array
+          items:
+            $ref: "#/components/schemas/DataCategory"
+        coverageNote:
+          type: string
+        resolvedAt:
+          type: string
+          format: date-time
+    Feature:
+      type: object
+      required: [name, dataCategory]
+      properties:
+        name:
+          type: string
+          example: mean_weekly_active_minutes
+        dataCategory:
+          $ref: "#/components/schemas/DataCategory"
+        value:
+          type: string
+        observedFrom:
+          type: string
+          format: date
+        observedTo:
+          type: string
+          format: date
+        consentRecordId:
+          type: string
+    ScoreRequest:
+      type: object
+      required: [riskSubjectId, jurisdiction, productCode, purpose]
+      properties:
+        riskSubjectId:
+          type: string
+        applicationReference:
+          type: string
+        jurisdiction:
+          type: string
+        productCode:
+          type: string
+        purpose:
+          $ref: "#/components/schemas/ProcessingPurpose"
+        features:
+          type: array
+          items:
+            $ref: "#/components/schemas/Feature"
+    ScoreContribution:
+      type: object
+      required: [modelId, premiumTerm]
+      properties:
+        modelId:
+          type: string
+        modelVersion:
+          type: string
+        premiumTerm:
+          $ref: "#/components/schemas/PremiumTerm"
+        contributionValue:
+          type: number
+          format: double
+        unit:
+          type: string
+          enum: [relative_multiplier, absolute_amount, rate_per_mille]
+        confidence:
+          type: number
+          format: float
+    ScoreResult:
+      type: object
+      required: [id, riskSubjectId, contributions]
+      properties:
+        id:
+          type: string
+        riskSubjectId:
+          type: string
+        jurisdiction:
+          type: string
+        productCode:
+          type: string
+        contributions:
+          type: array
+          items:
+            $ref: "#/components/schemas/ScoreContribution"
+        featuresUsed:
+          type: array
+          items:
+            type: string
+        featuresSuppressed:
+          type: array
+          description: Features withheld for permitting or consent reasons
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              reason:
+                type: string
+                enum: [prohibited_factor, consent_absent, restricted_health_data, undetermined_permit]
+        scoredAt:
+          type: string
+          format: date-time
+    ScoreExplanation:
+      type: object
+      properties:
+        scoreId:
+          type: string
+        factors:
+          type: array
+          items:
+            type: object
+            properties:
+              factor:
+                type: string
+              ratingBasisMapping:
+                type: string
+              direction:
+                type: string
+                enum: [increases_risk, decreases_risk]
+              magnitude:
+                type: number
+                format: float
+              permitId:
+                type: string
+        applicantDisclosureText:
+          type: string
+        humanReviewRoute:
+          type: string
+    PremiumComposition:
+      type: object
+      required: [id, riskSubjectId, technicalCost]
+      properties:
+        id:
+          type: string
+        riskSubjectId:
+          type: string
+        productCode:
+          type: string
+        jurisdiction:
+          type: string
+        expectedClaims:
+          $ref: "#/components/schemas/Money"
+        loadingForRisk:
+          $ref: "#/components/schemas/Money"
+        loadingForExpense:
+          $ref: "#/components/schemas/Money"
+        technicalCost:
+          $ref: "#/components/schemas/Money"
+        contributingScoreIds:
+          type: array
+          items:
+            type: string
+        riskLoadingBasis:
+          type: object
+          properties:
+            assumedTouchpointFrequency:
+              type: string
+              example: monthly
+            touchpointEvidenceId:
+              type: string
+            chronicConditionLoading:
+              type: boolean
+        composedAt:
+          type: string
+          format: date-time
+    PremiumCompositionCreate:
+      type: object
+      required: [riskSubjectId, productCode, jurisdiction, contributingScoreIds]
+      properties:
+        riskSubjectId:
+          type: string
+        productCode:
+          type: string
+        jurisdiction:
+          type: string
+        contributingScoreIds:
+          type: array
+          items:
+            type: string
+        assumedTouchpointFrequency:
+          type: string
+        touchpointEvidenceId:
+          type: string
+    CommercialCalibration:
+      type: object
+      required: [compositionId, calibratedPrice, rationale, approvedBy]
+      properties:
+        compositionId:
+          type: string
+        technicalCost:
+          $ref: "#/components/schemas/Money"
+        calibratedPrice:
+          $ref: "#/components/schemas/Money"
+        deltaPercent:
+          type: number
+          format: float
+        rationale:
+          type: string
+          enum:
+            - competitive_position
+            - channel_terms
+            - new_business_strain
+            - retention_objective
+            - portfolio_steering
+        narrative:
+          type: string
+        approvedBy:
+          type: string
+        approvedAt:
+          type: string
+          format: date-time
+    CommercialCalibrationCreate:
+      type: object
+      required: [calibratedPrice, rationale, approvedBy]
+      properties:
+        calibratedPrice:
+          $ref: "#/components/schemas/Money"
+        rationale:
+          type: string
+        narrative:
+          type: string
+        approvedBy:
+          type: string
+    VariationEnvelope:
+      type: object
+      required: [id, jurisdiction, productCode]
+      properties:
+        id:
+          type: string
+        jurisdiction:
+          type: string
+        productCode:
+          type: string
+        maxIncreasePercent:
+          type: number
+          format: float
+        maxDecreasePercent:
+          type: number
+          format: float
+        minRevisionIntervalDays:
+          type: integer
+          description: Shortest interval at which the filed structure permits change
+        prohibitedDrivers:
+          type: array
+          items:
+            type: string
+          example: [inferred_price_sensitivity, prior_shopping_behaviour]
+        basis:
+          type: string
+          enum: [rate_filing, regulatory_rule, policy_condition, treaty_term]
+        basisReference:
+          type: string
+        effectiveFrom:
+          type: string
+          format: date
+    VariationEnvelopeCreate:
+      type: object
+      required: [jurisdiction, productCode, basis]
+      properties:
+        jurisdiction:
+          type: string
+        productCode:
+          type: string
+        maxIncreasePercent:
+          type: number
+          format: float
+        maxDecreasePercent:
+          type: number
+          format: float
+        minRevisionIntervalDays:
+          type: integer
+        prohibitedDrivers:
+          type: array
+          items:
+            type: string
+        basis:
+          type: string
+        basisReference:
+          type: string
+    PriceOffer:
+      type: object
+      required: [id, compositionId, offeredPrice, gateOutcome]
+      properties:
+        id:
+          type: string
+        compositionId:
+          type: string
+        offeredPrice:
+          $ref: "#/components/schemas/Money"
+        gateOutcome:
+          type: string
+          enum: [within_envelope, refused_magnitude, refused_frequency, refused_prohibited_driver]
+        envelopeId:
+          type: string
+        validUntil:
+          type: string
+          format: date
+        issuedAt:
+          type: string
+          format: date-time
+    FactorPermit:
+      type: object
+      required: [id, factor, jurisdiction, position]
+      properties:
+        id:
+          type: string
+        factor:
+          type: string
+          example: residential_postcode_mortality_index
+        dataCategory:
+          $ref: "#/components/schemas/DataCategory"
+        jurisdiction:
+          type: string
+        position:
+          type: string
+          enum: [permitted, permitted_with_conditions, prohibited, undetermined]
+        proxyRiskAssessment:
+          type: string
+          description: Whether the factor proxies a protected characteristic
+        restrictedHealthDataBasis:
+          type: string
+          description: Statutory or moratorium position for genetic and similar data
+        explainableToApplicant:
+          type: boolean
+        conditions:
+          type: array
+          items:
+            type: string
+        officerId:
+          type: string
+        reviewedAt:
+          type: string
+          format: date-time
+        nextReviewDue:
+          type: string
+          format: date
+    FactorPermitCreate:
+      type: object
+      required: [factor, jurisdiction, position, officerId]
+      properties:
+        factor:
+          type: string
+        dataCategory:
+          $ref: "#/components/schemas/DataCategory"
+        jurisdiction:
+          type: string
+        position:
+          type: string
+          enum: [permitted, permitted_with_conditions, prohibited, undetermined]
+        proxyRiskAssessment:
+          type: string
+        restrictedHealthDataBasis:
+          type: string
+        explainableToApplicant:
+          type: boolean
+        conditions:
+          type: array
+          items:
+            type: string
+        officerId:
+          type: string
+    RiskModel:
+      type: object
+      required: [id, name, premiumTerm, state]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        premiumTerm:
+          $ref: "#/components/schemas/PremiumTerm"
+        target:
+          type: string
+          example: all_cause_mortality_five_year
+        state:
+          type: string
+          enum: [candidate, awaiting_validation, validated, in_production, withdrawn]
+        featureNames:
+          type: array
+          items:
+            type: string
+        productionJurisdictions:
+          type: array
+          items:
+            type: string
+        buildMethod:
+          type: string
+          enum: [manual, automated_search, vendor_supplied, reverse_engineered]
+        submittedBy:
+          type: string
+        submittedAt:
+          type: string
+          format: date-time
+    RiskModelCreate:
+      type: object
+      required: [name, premiumTerm, target, featureNames]
+      properties:
+        name:
+          type: string
+        premiumTerm:
+          $ref: "#/components/schemas/PremiumTerm"
+        target:
+          type: string
+        featureNames:
+          type: array
+          items:
+            type: string
+        buildMethod:
+          type: string
+        submittedBy:
+          type: string
+    ModelValidation:
+      type: object
+      required: [modelId, outcome, validatedBy]
+      properties:
+        modelId:
+          type: string
+        outcome:
+          type: string
+          enum: [approved, approved_with_conditions, rejected]
+        validatedBy:
+          type: string
+        permittedJurisdictions:
+          type: array
+          items:
+            type: string
+        blockedJurisdictions:
+          type: array
+          items:
+            type: string
+        blockedFactors:
+          type: array
+          items:
+            type: string
+        stabilityAssessment:
+          type: string
+        conditions:
+          type: array
+          items:
+            type: string
+        validatedAt:
+          type: string
+          format: date-time
+    ModelValidationCreate:
+      type: object
+      required: [outcome, validatedBy]
+      properties:
+        outcome:
+          type: string
+          enum: [approved, approved_with_conditions, rejected]
+        validatedBy:
+          type: string
+        permittedJurisdictions:
+          type: array
+          items:
+            type: string
+        blockedJurisdictions:
+          type: array
+          items:
+            type: string
+        blockedFactors:
+          type: array
+          items:
+            type: string
+        stabilityAssessment:
+          type: string
+        conditions:
+          type: array
+          items:
+            type: string
+    ValidationQueue:
+      type: object
+      properties:
+        awaitingValidation:
+          type: integer
+        medianAgeDays:
+          type: number
+          format: float
+        oldestAgeDays:
+          type: number
+          format: float
+        byPremiumTerm:
+          type: object
+          additionalProperties:
+            type: integer
+        validationCapacityPerMonth:
+          type: integer
+        flaggedAsOperationalRisk:
+          type: boolean
+    EngagementProgramme:
+      type: object
+      required: [id, name, premiumTermTargeted, state]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        premiumTermTargeted:
+          $ref: "#/components/schemas/PremiumTerm"
+        interventionKind:
+          type: string
+          enum:
+            - activity_nudge
+            - chronic_condition_management
+            - driving_feedback
+            - home_risk_alert
+            - screening_reminder
+            - financial_wellbeing
+        assumedTouchpointFrequency:
+          type: string
+        state:
+          type: string
+          enum: [design, boundary_review, live, suspended, closed]
+        boundaryReview:
+          type: object
+          properties:
+            medicalAdviceBoundaryCleared:
+              type: boolean
+            inducementBoundaryCleared:
+              type: boolean
+            jurisdictions:
+              type: array
+              items:
+                type: string
+            officerId:
+              type: string
+        enrolledCount:
+          type: integer
+    EngagementProgrammeCreate:
+      type: object
+      required: [name, premiumTermTargeted, interventionKind]
+      properties:
+        name:
+          type: string
+        premiumTermTargeted:
+          $ref: "#/components/schemas/PremiumTerm"
+        interventionKind:
+          type: string
+        assumedTouchpointFrequency:
+          type: string
+        jurisdictions:
+          type: array
+          items:
+            type: string
+    TouchpointEvent:
+      type: object
+      required: [id, enrolmentId, touchpointKind, occurredAt]
+      properties:
+        id:
+          type: string
+        enrolmentId:
+          type: string
+        touchpointKind:
+          type: string
+          enum: [data_sync, nudge_delivered, nudge_acted, coaching_session, screening_completed, alert_resolved]
+        occurredAt:
+          type: string
+          format: date-time
+        consentRecordId:
+          type: string
+    TouchpointEventCreate:
+      type: object
+      required: [enrolmentId, touchpointKind, occurredAt]
+      properties:
+        enrolmentId:
+          type: string
+        touchpointKind:
+          type: string
+        occurredAt:
+          type: string
+          format: date-time
+        consentRecordId:
+          type: string
+    TouchpointFrequency:
+      type: object
+      properties:
+        enrolmentId:
+          type: string
+        assumedFrequency:
+          type: string
+        measuredFrequency:
+          type: string
+        measurementWindow:
+          type: string
+        meetsAssumption:
+          type: boolean
+        consentGapDays:
+          type: integer
+        riskLoadingSupported:
+          type: boolean
+    CohortDefinition:
+      type: object
+      required: [id, programmeId, cohortKind]
+      properties:
+        id:
+          type: string
+        programmeId:
+          type: string
+        cohortKind:
+          type: string
+          enum: [engaged, matched_unengaged]
+        matchedOn:
+          type: array
+          items:
+            type: string
+          example: [attained_age, sex, product, underwriting_class, duration]
+        selectionSeparationMethod:
+          type: string
+          enum: [propensity_matching, stratified_comparison, randomised_offer, instrumental_variable]
+        memberCount:
+          type: integer
+        observationWindowMonths:
+          type: integer
+        comparableCohortId:
+          type: string
+    CohortDefinitionCreate:
+      type: object
+      required: [programmeId, cohortKind, selectionSeparationMethod]
+      properties:
+        programmeId:
+          type: string
+        cohortKind:
+          type: string
+          enum: [engaged, matched_unengaged]
+        matchedOn:
+          type: array
+          items:
+            type: string
+        selectionSeparationMethod:
+          type: string
+        observationWindowMonths:
+          type: integer
+        comparableCohortId:
+          type: string
+    ExperienceObservation:
+      type: object
+      required: [cohortId, period]
+      properties:
+        cohortId:
+          type: string
+        period:
+          type: string
+        exposureYears:
+          type: number
+          format: float
+        actualClaims:
+          $ref: "#/components/schemas/Money"
+        expectedClaims:
+          $ref: "#/components/schemas/Money"
+        actualToExpected:
+          type: number
+          format: float
+        lapseRate:
+          type: number
+          format: float
+        persistencyRate:
+          type: number
+          format: float
+        unengagedActualToExpected:
+          type: number
+          format: float
+        estimatedSelectionEffect:
+          type: number
+          format: float
+        windowComplete:
+          type: boolean
+    SavingsCredit:
+      type: object
+      required: [id, cohortId, premiumTerm, status]
+      properties:
+        id:
+          type: string
+        cohortId:
+          type: string
+        premiumTerm:
+          $ref: "#/components/schemas/PremiumTerm"
+        creditedBasisPoints:
+          type: number
+          format: float
+        behaviouralEffect:
+          type: number
+          format: float
+        selectionEffectRemoved:
+          type: number
+          format: float
+        persistencyImpact:
+          type: number
+          format: float
+        status:
+          type: string
+          enum: [credited, refused, withdrawn]
+        signedOffBy:
+          type: string
+        appliesFromPeriod:
+          type: string
+    SavingsCreditCreate:
+      type: object
+      required: [cohortId, premiumTerm, creditedBasisPoints, signedOffBy]
+      properties:
+        cohortId:
+          type: string
+        premiumTerm:
+          $ref: "#/components/schemas/PremiumTerm"
+        creditedBasisPoints:
+          type: number
+          format: float
+        behaviouralEffect:
+          type: number
+          format: float
+        selectionEffectRemoved:
+          type: number
+          format: float
+        signedOffBy:
+          type: string
+        appliesFromPeriod:
+          type: string
+    AutomaticSettlementCreate:
+      type: object
+      required: [claimReference, coveragePattern, evidenceRefs]
+      properties:
+        claimReference:
+          type: string
+        policyReference:
+          type: string
+        coveragePattern:
+          type: string
+          example: accidental_death_documented
+        evidenceRefs:
+          type: array
+          items:
+            type: string
+        claimedAmount:
+          $ref: "#/components/schemas/Money"
+    AutomaticSettlement:
+      type: object
+      required: [id, claimReference, outcome]
+      properties:
+        id:
+          type: string
+        claimReference:
+          type: string
+        outcome:
+          type: string
+          enum: [settled, referred, declined_pending_review]
+        settledAmount:
+          $ref: "#/components/schemas/Money"
+        coveragePattern:
+          type: string
+        ruleVersion:
+          type: string
+        handlingCost:
+          $ref: "#/components/schemas/Money"
+        settledAt:
+          type: string
+          format: date-time
+    FraudReferral:
+      type: object
+      required: [id, claimReference, indicators]
+      properties:
+        id:
+          type: string
+        claimReference:
+          type: string
+        indicators:
+          type: array
+          items:
+            type: object
+            properties:
+              indicator:
+                type: string
+              evidenceRef:
+                type: string
+        anomalyKind:
+          type: string
+          enum: [coverage_anomaly, timing_anomaly, network_pattern, documentation_inconsistency]
+        score:
+          type: number
+          format: float
+        raisedBy:
+          type: string
+        status:
+          type: string
+          enum: [open, investigating, substantiated, unsubstantiated]
+    FraudReferralCreate:
+      type: object
+      required: [claimReference, indicators, anomalyKind]
+      properties:
+        claimReference:
+          type: string
+        indicators:
+          type: array
+          items:
+            type: object
+            properties:
+              indicator:
+                type: string
+              evidenceRef:
+                type: string
+        anomalyKind:
+          type: string
+        score:
+          type: number
+          format: float
+    ExpenseMeasurement:
+      type: object
+      properties:
+        productCode:
+          type: string
+        period:
+          type: string
+        costPerPolicyIssued:
+          $ref: "#/components/schemas/Money"
+        costPerClaimSettled:
+          $ref: "#/components/schemas/Money"
+        automatedShareIssue:
+          type: number
+          format: float
+        automatedShareClaims:
+          type: number
+          format: float
+        impliedExpenseLoading:
+          type: number
+          format: float
+        pricedExpenseLoading:
+          type: number
+          format: float
+    CessionExperience:
+      type: object
+      properties:
+        treatyId:
+          type: string
+        cohortId:
+          type: string
+        period:
+          type: string
+        cededExposureYears:
+          type: number
+          format: float
+        cededClaims:
+          $ref: "#/components/schemas/Money"
+        pricingBasisExpected:
+          $ref: "#/components/schemas/Money"
+        actualToExpected:
+          type: number
+          format: float
+        assumptionsHolding:
+          type: boolean
+        sharedWithCounterparty:
+          type: boolean
+    ReviewDecision:
+      type: object
+      required: [id, decisionId, status]
+      properties:
+        id:
+          type: string
+        decisionId:
+          type: string
+        decisionKind:
+          type: string
+          enum: [declinature, exclusion, loading, claims_decision, price_refusal]
+        requestedBy:
+          type: string
+        grounds:
+          type: string
+        status:
+          type: string
+          enum: [open, upheld, overturned, partially_overturned]
+        reviewerId:
+          type: string
+        explanationProvided:
+          type: boolean
+        resolvedAt:
+          type: string
+          format: date-time
+    DataEnvelopeConsentRecord:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/ConsentRecord"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    DataEnvelopeConsentState:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/ConsentState"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    DataEnvelopeScoreResult:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/ScoreResult"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    DataEnvelopeScoreExplanation:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/ScoreExplanation"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    DataEnvelopePremiumComposition:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/PremiumComposition"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    DataEnvelopeCommercialCalibration:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/CommercialCalibration"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    DataEnvelopePriceOffer:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/PriceOffer"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    DataEnvelopeVariationEnvelope:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/VariationEnvelope"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    DataEnvelopeFactorPermit:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/FactorPermit"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    DataEnvelopeRiskModel:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/RiskModel"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    DataEnvelopeModelValidation:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/ModelValidation"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    DataEnvelopeValidationQueue:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/ValidationQueue"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    DataEnvelopeEngagementProgramme:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/EngagementProgramme"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    DataEnvelopeTouchpointEvent:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/TouchpointEvent"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    DataEnvelopeTouchpointFrequency:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/TouchpointFrequency"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    DataEnvelopeCohortDefinition:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/CohortDefinition"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    DataEnvelopeSavingsCredit:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/SavingsCredit"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    DataEnvelopeAutomaticSettlement:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/AutomaticSettlement"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    DataEnvelopeFraudReferral:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/FraudReferral"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    DataEnvelopeExpenseMeasurement:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/ExpenseMeasurement"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    DataEnvelopeCessionExperience:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/CessionExperience"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    DataEnvelopeReviewDecision:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          $ref: "#/components/schemas/ReviewDecision"
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    ListEnvelopeVariationEnvelope:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/VariationEnvelope"
+            nextCursor:
+              type: string
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    ListEnvelopeFactorPermit:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/FactorPermit"
+            nextCursor:
+              type: string
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    ListEnvelopeRiskModel:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/RiskModel"
+            nextCursor:
+              type: string
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    ListEnvelopeEngagementProgramme:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/EngagementProgramme"
+            nextCursor:
+              type: string
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    ListEnvelopeCohortDefinition:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/CohortDefinition"
+            nextCursor:
+              type: string
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"
+    ListEnvelopeExperienceObservation:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/ExperienceObservation"
+            nextCursor:
+              type: string
+        meta:
+          $ref: "#/components/schemas/ResponseMeta"

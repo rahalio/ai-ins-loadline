@@ -1,0 +1,237 @@
+openapi: 3.1.0
+info:
+  title: Loadline — Claims schemas
+  version: 0.1.0
+  x-domain: clm
+paths: {}
+components:
+  schemas:
+    AutomaticSettlement:
+      type: object
+      required:
+      - id
+      - claimReference
+      - outcome
+      properties:
+        id:
+          type: string
+        claimReference:
+          type: string
+        outcome:
+          type: string
+          enum:
+          - settled
+          - referred
+          - declined_pending_review
+        settledAmount:
+          $ref: ./common/loadline-primitives.yaml#/components/schemas/Money
+        coveragePattern:
+          type: string
+        ruleVersion:
+          type: string
+        handlingCost:
+          $ref: ./common/loadline-primitives.yaml#/components/schemas/Money
+        settledAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      x-dynamodb:
+        domain: CLAIMS
+        entityType: AUTOMATIC_SETTLEMENT
+        entityToken: AUTOMATIC_SETTLEMENT
+        skPrefix: AUTOMATIC_SETTLEMENT
+        pkPattern: entity
+        pkPatternTemplate: AUTOMATIC_SETTLEMENT#${settlementId}
+        skPatternTemplate: METADATA
+        isChildEntity: false
+        gsi1Enabled: false
+        gsi2Enabled: false
+        gsi3Enabled: false
+        softDeleteEnabled: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        tableType: core
+    AutomaticSettlementCreate:
+      type: object
+      required:
+      - claimReference
+      - coveragePattern
+      - evidenceRefs
+      properties:
+        claimReference:
+          type: string
+        policyReference:
+          type: string
+        coveragePattern:
+          type: string
+          example: accidental_death_documented
+        evidenceRefs:
+          type: array
+          items:
+            type: string
+        claimedAmount:
+          $ref: ./common/loadline-primitives.yaml#/components/schemas/Money
+    DataEnvelopeAutomaticSettlement:
+      type: object
+      required:
+      - data
+      - meta
+      properties:
+        data:
+          $ref: '#/components/schemas/AutomaticSettlement'
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta
+    DataEnvelopeExpenseMeasurement:
+      type: object
+      required:
+      - data
+      - meta
+      properties:
+        data:
+          $ref: '#/components/schemas/ExpenseMeasurement'
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta
+    DataEnvelopeFraudReferral:
+      type: object
+      required:
+      - data
+      - meta
+      properties:
+        data:
+          $ref: '#/components/schemas/FraudReferral'
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta
+    ExpenseMeasurement:
+      type: object
+      properties:
+        productCode:
+          type: string
+        period:
+          type: string
+        costPerPolicyIssued:
+          $ref: ./common/loadline-primitives.yaml#/components/schemas/Money
+        costPerClaimSettled:
+          $ref: ./common/loadline-primitives.yaml#/components/schemas/Money
+        automatedShareIssue:
+          type: number
+          format: float
+        automatedShareClaims:
+          type: number
+          format: float
+        impliedExpenseLoading:
+          type: number
+          format: float
+        pricedExpenseLoading:
+          type: number
+          format: float
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      x-dynamodb:
+        domain: CLAIMS
+        entityType: EXPENSE_MEASUREMENT
+        entityToken: EXPENSE_MEASUREMENT
+        skPrefix: EXPENSE_MEASUREMENT
+        pkPattern: entity
+        pkPatternTemplate: EXPENSE_MEASUREMENT#${measurementId}
+        skPatternTemplate: METADATA
+        isChildEntity: false
+        gsi1Enabled: false
+        gsi2Enabled: false
+        gsi3Enabled: false
+        softDeleteEnabled: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        tableType: core
+    FraudReferral:
+      type: object
+      required:
+      - id
+      - claimReference
+      - indicators
+      properties:
+        id:
+          type: string
+        claimReference:
+          type: string
+        indicators:
+          type: array
+          items:
+            type: object
+            properties:
+              indicator:
+                type: string
+              evidenceRef:
+                type: string
+        anomalyKind:
+          type: string
+          enum:
+          - coverage_anomaly
+          - timing_anomaly
+          - network_pattern
+          - documentation_inconsistency
+        score:
+          type: number
+          format: float
+        raisedBy:
+          type: string
+        status:
+          type: string
+          enum:
+          - open
+          - investigating
+          - substantiated
+          - unsubstantiated
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      x-dynamodb:
+        domain: CLAIMS
+        entityType: FRAUD_REFERRAL
+        entityToken: FRAUD_REFERRAL
+        skPrefix: FRAUD_REFERRAL
+        pkPattern: entity
+        pkPatternTemplate: FRAUD_REFERRAL#${referralId}
+        skPatternTemplate: METADATA
+        isChildEntity: false
+        gsi1Enabled: false
+        gsi2Enabled: false
+        gsi3Enabled: false
+        softDeleteEnabled: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        tableType: core
+    FraudReferralCreate:
+      type: object
+      required:
+      - claimReference
+      - indicators
+      - anomalyKind
+      properties:
+        claimReference:
+          type: string
+        indicators:
+          type: array
+          items:
+            type: object
+            properties:
+              indicator:
+                type: string
+              evidenceRef:
+                type: string
+        anomalyKind:
+          type: string
+        score:
+          type: number
+          format: float

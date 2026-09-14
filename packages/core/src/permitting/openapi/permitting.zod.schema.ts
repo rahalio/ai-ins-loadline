@@ -1,0 +1,969 @@
+import { makeApi, Zodios, type ZodiosOptions } from '@zodios/core';
+import { z } from 'zod';
+
+const recordFactorPermit_Body = z
+  .object({
+    factor: z.string(),
+    dataCategory: z
+      .enum([
+        'connected_life',
+        'connected_car',
+        'connected_home',
+        'connected_finance',
+        'medical_evidence',
+        'genetic',
+        'epigenetic',
+        'microbiome',
+        'geographic',
+        'declared_lifestyle',
+        'population_table',
+      ])
+      .optional(),
+    jurisdiction: z.string(),
+    position: z.enum([
+      'permitted',
+      'permitted_with_conditions',
+      'prohibited',
+      'undetermined',
+    ]),
+    proxyRiskAssessment: z.string().optional(),
+    restrictedHealthDataBasis: z.string().optional(),
+    explainableToApplicant: z.boolean().optional(),
+    conditions: z.array(z.string()).optional(),
+    officerId: z.string(),
+  })
+  .passthrough();
+const submitRiskModel_Body = z
+  .object({
+    name: z.string(),
+    premiumTerm: z.enum([
+      'expected_claims',
+      'loading_for_risk',
+      'loading_for_expense',
+    ]),
+    target: z.string(),
+    featureNames: z.array(z.string()),
+    buildMethod: z.string().optional(),
+    submittedBy: z.string().optional(),
+  })
+  .passthrough();
+const validateRiskModel_Body = z
+  .object({
+    outcome: z.enum(['approved', 'approved_with_conditions', 'rejected']),
+    validatedBy: z.string(),
+    permittedJurisdictions: z.array(z.string()).optional(),
+    blockedJurisdictions: z.array(z.string()).optional(),
+    blockedFactors: z.array(z.string()).optional(),
+    stabilityAssessment: z.string().optional(),
+    conditions: z.array(z.string()).optional(),
+  })
+  .passthrough();
+const DataCategory = z.enum([
+  'connected_life',
+  'connected_car',
+  'connected_home',
+  'connected_finance',
+  'medical_evidence',
+  'genetic',
+  'epigenetic',
+  'microbiome',
+  'geographic',
+  'declared_lifestyle',
+  'population_table',
+]);
+const Problem = z
+  .object({
+    type: z.string().url(),
+    title: z.string(),
+    status: z.number().int(),
+    detail: z.string(),
+    instance: z.string().url(),
+    code: z.string(),
+  })
+  .partial()
+  .passthrough();
+const FactorPermit = z
+  .object({
+    id: z.string(),
+    factor: z.string(),
+    dataCategory: z
+      .enum([
+        'connected_life',
+        'connected_car',
+        'connected_home',
+        'connected_finance',
+        'medical_evidence',
+        'genetic',
+        'epigenetic',
+        'microbiome',
+        'geographic',
+        'declared_lifestyle',
+        'population_table',
+      ])
+      .optional(),
+    jurisdiction: z.string(),
+    position: z.enum([
+      'permitted',
+      'permitted_with_conditions',
+      'prohibited',
+      'undetermined',
+    ]),
+    proxyRiskAssessment: z.string().optional(),
+    restrictedHealthDataBasis: z.string().optional(),
+    explainableToApplicant: z.boolean().optional(),
+    conditions: z.array(z.string()).optional(),
+    officerId: z.string().optional(),
+    reviewedAt: z.string().datetime({ offset: true }).optional(),
+    nextReviewDue: z.string().optional(),
+    createdAt: z.string().datetime({ offset: true }).optional(),
+    updatedAt: z.string().datetime({ offset: true }).optional(),
+  })
+  .passthrough();
+const ResponseMeta = z
+  .object({
+    requestId: z.string().uuid(),
+    correlationId: z.string(),
+    generatedAt: z.string().datetime({ offset: true }),
+  })
+  .partial()
+  .passthrough();
+const ListEnvelopeFactorPermit = z
+  .object({
+    data: z
+      .object({
+        items: z.array(
+          z
+            .object({
+              id: z.string(),
+              factor: z.string(),
+              dataCategory: z
+                .enum([
+                  'connected_life',
+                  'connected_car',
+                  'connected_home',
+                  'connected_finance',
+                  'medical_evidence',
+                  'genetic',
+                  'epigenetic',
+                  'microbiome',
+                  'geographic',
+                  'declared_lifestyle',
+                  'population_table',
+                ])
+                .optional(),
+              jurisdiction: z.string(),
+              position: z.enum([
+                'permitted',
+                'permitted_with_conditions',
+                'prohibited',
+                'undetermined',
+              ]),
+              proxyRiskAssessment: z.string().optional(),
+              restrictedHealthDataBasis: z.string().optional(),
+              explainableToApplicant: z.boolean().optional(),
+              conditions: z.array(z.string()).optional(),
+              officerId: z.string().optional(),
+              reviewedAt: z.string().datetime({ offset: true }).optional(),
+              nextReviewDue: z.string().optional(),
+              createdAt: z.string().datetime({ offset: true }).optional(),
+              updatedAt: z.string().datetime({ offset: true }).optional(),
+            })
+            .passthrough()
+        ),
+        nextCursor: z.string().optional(),
+      })
+      .passthrough(),
+    meta: z
+      .object({
+        requestId: z.string().uuid(),
+        correlationId: z.string(),
+        generatedAt: z.string().datetime({ offset: true }),
+      })
+      .partial()
+      .passthrough(),
+  })
+  .passthrough();
+const FactorPermitCreate = z
+  .object({
+    factor: z.string(),
+    dataCategory: z
+      .enum([
+        'connected_life',
+        'connected_car',
+        'connected_home',
+        'connected_finance',
+        'medical_evidence',
+        'genetic',
+        'epigenetic',
+        'microbiome',
+        'geographic',
+        'declared_lifestyle',
+        'population_table',
+      ])
+      .optional(),
+    jurisdiction: z.string(),
+    position: z.enum([
+      'permitted',
+      'permitted_with_conditions',
+      'prohibited',
+      'undetermined',
+    ]),
+    proxyRiskAssessment: z.string().optional(),
+    restrictedHealthDataBasis: z.string().optional(),
+    explainableToApplicant: z.boolean().optional(),
+    conditions: z.array(z.string()).optional(),
+    officerId: z.string(),
+  })
+  .passthrough();
+const DataEnvelopeFactorPermit = z
+  .object({
+    data: z
+      .object({
+        id: z.string(),
+        factor: z.string(),
+        dataCategory: z
+          .enum([
+            'connected_life',
+            'connected_car',
+            'connected_home',
+            'connected_finance',
+            'medical_evidence',
+            'genetic',
+            'epigenetic',
+            'microbiome',
+            'geographic',
+            'declared_lifestyle',
+            'population_table',
+          ])
+          .optional(),
+        jurisdiction: z.string(),
+        position: z.enum([
+          'permitted',
+          'permitted_with_conditions',
+          'prohibited',
+          'undetermined',
+        ]),
+        proxyRiskAssessment: z.string().optional(),
+        restrictedHealthDataBasis: z.string().optional(),
+        explainableToApplicant: z.boolean().optional(),
+        conditions: z.array(z.string()).optional(),
+        officerId: z.string().optional(),
+        reviewedAt: z.string().datetime({ offset: true }).optional(),
+        nextReviewDue: z.string().optional(),
+        createdAt: z.string().datetime({ offset: true }).optional(),
+        updatedAt: z.string().datetime({ offset: true }).optional(),
+      })
+      .passthrough(),
+    meta: z
+      .object({
+        requestId: z.string().uuid(),
+        correlationId: z.string(),
+        generatedAt: z.string().datetime({ offset: true }),
+      })
+      .partial()
+      .passthrough(),
+  })
+  .passthrough();
+const PremiumTerm = z.enum([
+  'expected_claims',
+  'loading_for_risk',
+  'loading_for_expense',
+]);
+const RiskModel = z
+  .object({
+    id: z.string(),
+    name: z.string(),
+    premiumTerm: z.enum([
+      'expected_claims',
+      'loading_for_risk',
+      'loading_for_expense',
+    ]),
+    target: z.string().optional(),
+    state: z.enum([
+      'candidate',
+      'awaiting_validation',
+      'validated',
+      'in_production',
+      'withdrawn',
+    ]),
+    featureNames: z.array(z.string()).optional(),
+    productionJurisdictions: z.array(z.string()).optional(),
+    buildMethod: z
+      .enum([
+        'manual',
+        'automated_search',
+        'vendor_supplied',
+        'reverse_engineered',
+      ])
+      .optional(),
+    submittedBy: z.string().optional(),
+    submittedAt: z.string().datetime({ offset: true }).optional(),
+    createdAt: z.string().datetime({ offset: true }).optional(),
+    updatedAt: z.string().datetime({ offset: true }).optional(),
+  })
+  .passthrough();
+const ListEnvelopeRiskModel = z
+  .object({
+    data: z
+      .object({
+        items: z.array(
+          z
+            .object({
+              id: z.string(),
+              name: z.string(),
+              premiumTerm: z.enum([
+                'expected_claims',
+                'loading_for_risk',
+                'loading_for_expense',
+              ]),
+              target: z.string().optional(),
+              state: z.enum([
+                'candidate',
+                'awaiting_validation',
+                'validated',
+                'in_production',
+                'withdrawn',
+              ]),
+              featureNames: z.array(z.string()).optional(),
+              productionJurisdictions: z.array(z.string()).optional(),
+              buildMethod: z
+                .enum([
+                  'manual',
+                  'automated_search',
+                  'vendor_supplied',
+                  'reverse_engineered',
+                ])
+                .optional(),
+              submittedBy: z.string().optional(),
+              submittedAt: z.string().datetime({ offset: true }).optional(),
+              createdAt: z.string().datetime({ offset: true }).optional(),
+              updatedAt: z.string().datetime({ offset: true }).optional(),
+            })
+            .passthrough()
+        ),
+        nextCursor: z.string().optional(),
+      })
+      .passthrough(),
+    meta: z
+      .object({
+        requestId: z.string().uuid(),
+        correlationId: z.string(),
+        generatedAt: z.string().datetime({ offset: true }),
+      })
+      .partial()
+      .passthrough(),
+  })
+  .passthrough();
+const RiskModelCreate = z
+  .object({
+    name: z.string(),
+    premiumTerm: z.enum([
+      'expected_claims',
+      'loading_for_risk',
+      'loading_for_expense',
+    ]),
+    target: z.string(),
+    featureNames: z.array(z.string()),
+    buildMethod: z.string().optional(),
+    submittedBy: z.string().optional(),
+  })
+  .passthrough();
+const DataEnvelopeRiskModel = z
+  .object({
+    data: z
+      .object({
+        id: z.string(),
+        name: z.string(),
+        premiumTerm: z.enum([
+          'expected_claims',
+          'loading_for_risk',
+          'loading_for_expense',
+        ]),
+        target: z.string().optional(),
+        state: z.enum([
+          'candidate',
+          'awaiting_validation',
+          'validated',
+          'in_production',
+          'withdrawn',
+        ]),
+        featureNames: z.array(z.string()).optional(),
+        productionJurisdictions: z.array(z.string()).optional(),
+        buildMethod: z
+          .enum([
+            'manual',
+            'automated_search',
+            'vendor_supplied',
+            'reverse_engineered',
+          ])
+          .optional(),
+        submittedBy: z.string().optional(),
+        submittedAt: z.string().datetime({ offset: true }).optional(),
+        createdAt: z.string().datetime({ offset: true }).optional(),
+        updatedAt: z.string().datetime({ offset: true }).optional(),
+      })
+      .passthrough(),
+    meta: z
+      .object({
+        requestId: z.string().uuid(),
+        correlationId: z.string(),
+        generatedAt: z.string().datetime({ offset: true }),
+      })
+      .partial()
+      .passthrough(),
+  })
+  .passthrough();
+const ModelValidationCreate = z
+  .object({
+    outcome: z.enum(['approved', 'approved_with_conditions', 'rejected']),
+    validatedBy: z.string(),
+    permittedJurisdictions: z.array(z.string()).optional(),
+    blockedJurisdictions: z.array(z.string()).optional(),
+    blockedFactors: z.array(z.string()).optional(),
+    stabilityAssessment: z.string().optional(),
+    conditions: z.array(z.string()).optional(),
+  })
+  .passthrough();
+const ModelValidation = z
+  .object({
+    modelId: z.string(),
+    outcome: z.enum(['approved', 'approved_with_conditions', 'rejected']),
+    validatedBy: z.string(),
+    permittedJurisdictions: z.array(z.string()).optional(),
+    blockedJurisdictions: z.array(z.string()).optional(),
+    blockedFactors: z.array(z.string()).optional(),
+    stabilityAssessment: z.string().optional(),
+    conditions: z.array(z.string()).optional(),
+    validatedAt: z.string().datetime({ offset: true }).optional(),
+    createdAt: z.string().datetime({ offset: true }).optional(),
+    updatedAt: z.string().datetime({ offset: true }).optional(),
+  })
+  .passthrough();
+const DataEnvelopeModelValidation = z
+  .object({
+    data: z
+      .object({
+        modelId: z.string(),
+        outcome: z.enum(['approved', 'approved_with_conditions', 'rejected']),
+        validatedBy: z.string(),
+        permittedJurisdictions: z.array(z.string()).optional(),
+        blockedJurisdictions: z.array(z.string()).optional(),
+        blockedFactors: z.array(z.string()).optional(),
+        stabilityAssessment: z.string().optional(),
+        conditions: z.array(z.string()).optional(),
+        validatedAt: z.string().datetime({ offset: true }).optional(),
+        createdAt: z.string().datetime({ offset: true }).optional(),
+        updatedAt: z.string().datetime({ offset: true }).optional(),
+      })
+      .passthrough(),
+    meta: z
+      .object({
+        requestId: z.string().uuid(),
+        correlationId: z.string(),
+        generatedAt: z.string().datetime({ offset: true }),
+      })
+      .partial()
+      .passthrough(),
+  })
+  .passthrough();
+const ValidationQueue = z
+  .object({
+    awaitingValidation: z.number().int(),
+    medianAgeDays: z.number(),
+    oldestAgeDays: z.number(),
+    byPremiumTerm: z.record(z.number().int()),
+    validationCapacityPerMonth: z.number().int(),
+    flaggedAsOperationalRisk: z.boolean(),
+  })
+  .partial()
+  .passthrough();
+const DataEnvelopeValidationQueue = z
+  .object({
+    data: z
+      .object({
+        awaitingValidation: z.number().int(),
+        medianAgeDays: z.number(),
+        oldestAgeDays: z.number(),
+        byPremiumTerm: z.record(z.number().int()),
+        validationCapacityPerMonth: z.number().int(),
+        flaggedAsOperationalRisk: z.boolean(),
+      })
+      .partial()
+      .passthrough(),
+    meta: z
+      .object({
+        requestId: z.string().uuid(),
+        correlationId: z.string(),
+        generatedAt: z.string().datetime({ offset: true }),
+      })
+      .partial()
+      .passthrough(),
+  })
+  .passthrough();
+
+export const schemas: any = {
+  recordFactorPermit_Body,
+  submitRiskModel_Body,
+  validateRiskModel_Body,
+  DataCategory,
+  Problem,
+  FactorPermit,
+  ResponseMeta,
+  ListEnvelopeFactorPermit,
+  FactorPermitCreate,
+  DataEnvelopeFactorPermit,
+  PremiumTerm,
+  RiskModel,
+  ListEnvelopeRiskModel,
+  RiskModelCreate,
+  DataEnvelopeRiskModel,
+  ModelValidationCreate,
+  ModelValidation,
+  DataEnvelopeModelValidation,
+  ValidationQueue,
+  DataEnvelopeValidationQueue,
+};
+
+const endpoints = makeApi([
+  {
+    method: 'get',
+    path: '/v1/permitting/factor-permits',
+    alias: 'listFactorPermits',
+    requestFormat: 'json',
+    parameters: [
+      {
+        name: 'cursor',
+        type: 'Query',
+        schema: z.string().optional(),
+      },
+      {
+        name: 'limit',
+        type: 'Query',
+        schema: z.number().int().gte(1).lte(200).optional().default(50),
+      },
+      {
+        name: 'jurisdiction',
+        type: 'Query',
+        schema: z.string().optional(),
+      },
+      {
+        name: 'position',
+        type: 'Query',
+        schema: z
+          .enum([
+            'permitted',
+            'permitted_with_conditions',
+            'prohibited',
+            'undetermined',
+          ])
+          .optional(),
+      },
+      {
+        name: 'dataCategory',
+        type: 'Query',
+        schema: z
+          .enum([
+            'connected_life',
+            'connected_car',
+            'connected_home',
+            'connected_finance',
+            'medical_evidence',
+            'genetic',
+            'epigenetic',
+            'microbiome',
+            'geographic',
+            'declared_lifestyle',
+            'population_table',
+          ])
+          .optional(),
+      },
+    ],
+    response: z
+      .object({
+        data: z
+          .object({
+            items: z.array(
+              z
+                .object({
+                  id: z.string(),
+                  factor: z.string(),
+                  dataCategory: z
+                    .enum([
+                      'connected_life',
+                      'connected_car',
+                      'connected_home',
+                      'connected_finance',
+                      'medical_evidence',
+                      'genetic',
+                      'epigenetic',
+                      'microbiome',
+                      'geographic',
+                      'declared_lifestyle',
+                      'population_table',
+                    ])
+                    .optional(),
+                  jurisdiction: z.string(),
+                  position: z.enum([
+                    'permitted',
+                    'permitted_with_conditions',
+                    'prohibited',
+                    'undetermined',
+                  ]),
+                  proxyRiskAssessment: z.string().optional(),
+                  restrictedHealthDataBasis: z.string().optional(),
+                  explainableToApplicant: z.boolean().optional(),
+                  conditions: z.array(z.string()).optional(),
+                  officerId: z.string().optional(),
+                  reviewedAt: z.string().datetime({ offset: true }).optional(),
+                  nextReviewDue: z.string().optional(),
+                  createdAt: z.string().datetime({ offset: true }).optional(),
+                  updatedAt: z.string().datetime({ offset: true }).optional(),
+                })
+                .passthrough()
+            ),
+            nextCursor: z.string().optional(),
+          })
+          .passthrough(),
+        meta: z
+          .object({
+            requestId: z.string().uuid(),
+            correlationId: z.string(),
+            generatedAt: z.string().datetime({ offset: true }),
+          })
+          .partial()
+          .passthrough(),
+      })
+      .passthrough(),
+  },
+  {
+    method: 'post',
+    path: '/v1/permitting/factor-permits',
+    alias: 'recordFactorPermit',
+    requestFormat: 'json',
+    parameters: [
+      {
+        name: 'body',
+        type: 'Body',
+        schema: recordFactorPermit_Body,
+      },
+    ],
+    response: z
+      .object({
+        data: z
+          .object({
+            id: z.string(),
+            factor: z.string(),
+            dataCategory: z
+              .enum([
+                'connected_life',
+                'connected_car',
+                'connected_home',
+                'connected_finance',
+                'medical_evidence',
+                'genetic',
+                'epigenetic',
+                'microbiome',
+                'geographic',
+                'declared_lifestyle',
+                'population_table',
+              ])
+              .optional(),
+            jurisdiction: z.string(),
+            position: z.enum([
+              'permitted',
+              'permitted_with_conditions',
+              'prohibited',
+              'undetermined',
+            ]),
+            proxyRiskAssessment: z.string().optional(),
+            restrictedHealthDataBasis: z.string().optional(),
+            explainableToApplicant: z.boolean().optional(),
+            conditions: z.array(z.string()).optional(),
+            officerId: z.string().optional(),
+            reviewedAt: z.string().datetime({ offset: true }).optional(),
+            nextReviewDue: z.string().optional(),
+            createdAt: z.string().datetime({ offset: true }).optional(),
+            updatedAt: z.string().datetime({ offset: true }).optional(),
+          })
+          .passthrough(),
+        meta: z
+          .object({
+            requestId: z.string().uuid(),
+            correlationId: z.string(),
+            generatedAt: z.string().datetime({ offset: true }),
+          })
+          .partial()
+          .passthrough(),
+      })
+      .passthrough(),
+    errors: [
+      {
+        status: 422,
+        description: `Semantically invalid request (e.g. PACK_EMPTY)`,
+        schema: z
+          .object({
+            type: z.string().url(),
+            title: z.string(),
+            status: z.number().int(),
+            detail: z.string(),
+            instance: z.string().url(),
+            code: z.string(),
+          })
+          .partial()
+          .passthrough(),
+      },
+    ],
+  },
+  {
+    method: 'get',
+    path: '/v1/permitting/models',
+    alias: 'listRiskModels',
+    requestFormat: 'json',
+    parameters: [
+      {
+        name: 'cursor',
+        type: 'Query',
+        schema: z.string().optional(),
+      },
+      {
+        name: 'limit',
+        type: 'Query',
+        schema: z.number().int().gte(1).lte(200).optional().default(50),
+      },
+      {
+        name: 'premiumTerm',
+        type: 'Query',
+        schema: z
+          .enum(['expected_claims', 'loading_for_risk', 'loading_for_expense'])
+          .optional(),
+      },
+      {
+        name: 'state',
+        type: 'Query',
+        schema: z
+          .enum([
+            'candidate',
+            'awaiting_validation',
+            'validated',
+            'in_production',
+            'withdrawn',
+          ])
+          .optional(),
+      },
+    ],
+    response: z
+      .object({
+        data: z
+          .object({
+            items: z.array(
+              z
+                .object({
+                  id: z.string(),
+                  name: z.string(),
+                  premiumTerm: z.enum([
+                    'expected_claims',
+                    'loading_for_risk',
+                    'loading_for_expense',
+                  ]),
+                  target: z.string().optional(),
+                  state: z.enum([
+                    'candidate',
+                    'awaiting_validation',
+                    'validated',
+                    'in_production',
+                    'withdrawn',
+                  ]),
+                  featureNames: z.array(z.string()).optional(),
+                  productionJurisdictions: z.array(z.string()).optional(),
+                  buildMethod: z
+                    .enum([
+                      'manual',
+                      'automated_search',
+                      'vendor_supplied',
+                      'reverse_engineered',
+                    ])
+                    .optional(),
+                  submittedBy: z.string().optional(),
+                  submittedAt: z.string().datetime({ offset: true }).optional(),
+                  createdAt: z.string().datetime({ offset: true }).optional(),
+                  updatedAt: z.string().datetime({ offset: true }).optional(),
+                })
+                .passthrough()
+            ),
+            nextCursor: z.string().optional(),
+          })
+          .passthrough(),
+        meta: z
+          .object({
+            requestId: z.string().uuid(),
+            correlationId: z.string(),
+            generatedAt: z.string().datetime({ offset: true }),
+          })
+          .partial()
+          .passthrough(),
+      })
+      .passthrough(),
+  },
+  {
+    method: 'post',
+    path: '/v1/permitting/models',
+    alias: 'submitRiskModel',
+    requestFormat: 'json',
+    parameters: [
+      {
+        name: 'body',
+        type: 'Body',
+        schema: submitRiskModel_Body,
+      },
+    ],
+    response: z
+      .object({
+        data: z
+          .object({
+            id: z.string(),
+            name: z.string(),
+            premiumTerm: z.enum([
+              'expected_claims',
+              'loading_for_risk',
+              'loading_for_expense',
+            ]),
+            target: z.string().optional(),
+            state: z.enum([
+              'candidate',
+              'awaiting_validation',
+              'validated',
+              'in_production',
+              'withdrawn',
+            ]),
+            featureNames: z.array(z.string()).optional(),
+            productionJurisdictions: z.array(z.string()).optional(),
+            buildMethod: z
+              .enum([
+                'manual',
+                'automated_search',
+                'vendor_supplied',
+                'reverse_engineered',
+              ])
+              .optional(),
+            submittedBy: z.string().optional(),
+            submittedAt: z.string().datetime({ offset: true }).optional(),
+            createdAt: z.string().datetime({ offset: true }).optional(),
+            updatedAt: z.string().datetime({ offset: true }).optional(),
+          })
+          .passthrough(),
+        meta: z
+          .object({
+            requestId: z.string().uuid(),
+            correlationId: z.string(),
+            generatedAt: z.string().datetime({ offset: true }),
+          })
+          .partial()
+          .passthrough(),
+      })
+      .passthrough(),
+    errors: [
+      {
+        status: 422,
+        description: `Rejected because no premium term was declared. A model that cannot name the term of the price it acts on may not be deployed.`,
+        schema: z
+          .object({
+            type: z.string().url(),
+            title: z.string(),
+            status: z.number().int(),
+            detail: z.string(),
+            instance: z.string().url(),
+            code: z.string(),
+          })
+          .partial()
+          .passthrough(),
+      },
+    ],
+  },
+  {
+    method: 'post',
+    path: '/v1/permitting/models/:modelId/validation',
+    alias: 'validateRiskModel',
+    requestFormat: 'json',
+    parameters: [
+      {
+        name: 'body',
+        type: 'Body',
+        schema: validateRiskModel_Body,
+      },
+      {
+        name: 'modelId',
+        type: 'Path',
+        schema: z.string(),
+      },
+    ],
+    response: z
+      .object({
+        data: z
+          .object({
+            modelId: z.string(),
+            outcome: z.enum([
+              'approved',
+              'approved_with_conditions',
+              'rejected',
+            ]),
+            validatedBy: z.string(),
+            permittedJurisdictions: z.array(z.string()).optional(),
+            blockedJurisdictions: z.array(z.string()).optional(),
+            blockedFactors: z.array(z.string()).optional(),
+            stabilityAssessment: z.string().optional(),
+            conditions: z.array(z.string()).optional(),
+            validatedAt: z.string().datetime({ offset: true }).optional(),
+            createdAt: z.string().datetime({ offset: true }).optional(),
+            updatedAt: z.string().datetime({ offset: true }).optional(),
+          })
+          .passthrough(),
+        meta: z
+          .object({
+            requestId: z.string().uuid(),
+            correlationId: z.string(),
+            generatedAt: z.string().datetime({ offset: true }),
+          })
+          .partial()
+          .passthrough(),
+      })
+      .passthrough(),
+  },
+  {
+    method: 'get',
+    path: '/v1/permitting/validation-queue',
+    alias: 'getValidationQueue',
+    requestFormat: 'json',
+    response: z
+      .object({
+        data: z
+          .object({
+            awaitingValidation: z.number().int(),
+            medianAgeDays: z.number(),
+            oldestAgeDays: z.number(),
+            byPremiumTerm: z.record(z.number().int()),
+            validationCapacityPerMonth: z.number().int(),
+            flaggedAsOperationalRisk: z.boolean(),
+          })
+          .partial()
+          .passthrough(),
+        meta: z
+          .object({
+            requestId: z.string().uuid(),
+            correlationId: z.string(),
+            generatedAt: z.string().datetime({ offset: true }),
+          })
+          .partial()
+          .passthrough(),
+      })
+      .passthrough(),
+  },
+]);
+
+export const api: any = new Zodios(
+  'https://api.ddd-codegen-starter.local/v1',
+  endpoints
+);
+
+export function createApiClient(baseUrl: string, options?: ZodiosOptions): any {
+  return new Zodios(baseUrl, endpoints, options);
+}

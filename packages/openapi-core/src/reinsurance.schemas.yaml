@@ -1,0 +1,132 @@
+openapi: 3.1.0
+info:
+  title: Loadline — Reinsurance schemas
+  version: 0.1.0
+  x-domain: rei
+paths: {}
+components:
+  schemas:
+    CessionExperience:
+      type: object
+      properties:
+        treatyId:
+          type: string
+        cohortId:
+          type: string
+        period:
+          type: string
+        cededExposureYears:
+          type: number
+          format: float
+        cededClaims:
+          $ref: ./common/loadline-primitives.yaml#/components/schemas/Money
+        pricingBasisExpected:
+          $ref: ./common/loadline-primitives.yaml#/components/schemas/Money
+        actualToExpected:
+          type: number
+          format: float
+        assumptionsHolding:
+          type: boolean
+        sharedWithCounterparty:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      x-dynamodb:
+        domain: REINSURANCE
+        entityType: CESSION_EXPERIENCE
+        entityToken: CESSION_EXPERIENCE
+        skPrefix: CESSION_EXPERIENCE
+        pkPattern: entity
+        pkPatternTemplate: CESSION_EXPERIENCE#${cessionExperienceId}
+        skPatternTemplate: METADATA
+        isChildEntity: false
+        gsi1Enabled: false
+        gsi2Enabled: false
+        gsi3Enabled: false
+        softDeleteEnabled: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        tableType: core
+    DataEnvelopeCessionExperience:
+      type: object
+      required:
+      - data
+      - meta
+      properties:
+        data:
+          $ref: '#/components/schemas/CessionExperience'
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta
+    DataEnvelopeReviewDecision:
+      type: object
+      required:
+      - data
+      - meta
+      properties:
+        data:
+          $ref: '#/components/schemas/ReviewDecision'
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta
+    ReviewDecision:
+      type: object
+      required:
+      - id
+      - decisionId
+      - status
+      properties:
+        id:
+          type: string
+        decisionId:
+          type: string
+        decisionKind:
+          type: string
+          enum:
+          - declinature
+          - exclusion
+          - loading
+          - claims_decision
+          - price_refusal
+        requestedBy:
+          type: string
+        grounds:
+          type: string
+        status:
+          type: string
+          enum:
+          - open
+          - upheld
+          - overturned
+          - partially_overturned
+        reviewerId:
+          type: string
+        explanationProvided:
+          type: boolean
+        resolvedAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      x-dynamodb:
+        domain: REINSURANCE
+        entityType: REVIEW_DECISION
+        entityToken: REVIEW_DECISION
+        skPrefix: REVIEW_DECISION
+        pkPattern: entity
+        pkPatternTemplate: REVIEW_DECISION#${reviewId}
+        skPatternTemplate: METADATA
+        isChildEntity: false
+        gsi1Enabled: false
+        gsi2Enabled: false
+        gsi3Enabled: false
+        softDeleteEnabled: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        tableType: core

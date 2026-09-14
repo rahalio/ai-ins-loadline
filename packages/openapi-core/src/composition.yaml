@@ -1,0 +1,202 @@
+openapi: 3.1.0
+info:
+  title: Loadline — Composition
+  version: 0.1.0
+  description: Premium composition, commercial calibration, variation envelopes, and price offers.
+  license:
+    name: Proprietary
+  x-domain: cmp
+  x-product-slug: ai-ins-loadline
+servers:
+- url: https://api.loadline.local
+  description: Local API
+- url: /
+  description: Relative
+security:
+- apiKey: []
+tags:
+- name: Composition
+  description: Premium composition, commercial calibration, and variation gate
+paths:
+  /v1/compositions:
+    post:
+      operationId: composePremium
+      tags:
+      - Composition
+      security:
+      - apiKey: []
+      - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./composition.schemas.yaml#/components/schemas/PremiumCompositionCreate
+      responses:
+        '201':
+          description: Technical cost assembled from expected claims, loading for risk, and loading for
+            expense, each traceable to its contributing models.
+          content:
+            application/json:
+              schema:
+                $ref: ./composition.schemas.yaml#/components/schemas/DataEnvelopePremiumComposition
+        '422':
+          description: Rejected when a contributing model has not declared its premium term or when a
+            risk-loading reduction cites touchpoint frequency without supporting touchpoint evidence.
+          content:
+            application/json:
+              schema:
+                $ref: ./common/problem.yaml#/components/schemas/Problem
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+      x-repository: PremiumComposition
+      summary: Compose Premium
+  /v1/compositions/{compositionId}/calibration:
+    parameters:
+    - $ref: '#/components/parameters/CompositionId'
+    post:
+      operationId: applyCommercialCalibration
+      tags:
+      - Composition
+      security:
+      - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./composition.schemas.yaml#/components/schemas/CommercialCalibrationCreate
+      responses:
+        '200':
+          description: Attributed step from technical cost to offered price, keeping pricing distinguishable
+            from costing.
+          content:
+            application/json:
+              schema:
+                $ref: ./composition.schemas.yaml#/components/schemas/DataEnvelopeCommercialCalibration
+        '403':
+          description: Calibration beyond the approver's threshold requires escalation
+          content:
+            application/json:
+              schema:
+                $ref: ./common/problem.yaml#/components/schemas/Problem
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+      x-repository: CommercialCalibration
+      summary: Apply Commercial Calibration
+  /v1/compositions/{compositionId}/offer:
+    parameters:
+    - $ref: '#/components/parameters/CompositionId'
+    post:
+      operationId: issuePriceOffer
+      tags:
+      - Composition
+      security:
+      - apiKey: []
+      - bearerAuth: []
+      responses:
+        '201':
+          description: Offer issued within the permitted variation envelope
+          content:
+            application/json:
+              schema:
+                $ref: ./composition.schemas.yaml#/components/schemas/DataEnvelopePriceOffer
+        '409':
+          description: Offer refused by the permitted variation gate because the magnitude or frequency
+            of variation exceeds what the jurisdiction permits for this product.
+          content:
+            application/json:
+              schema:
+                $ref: ./common/problem.yaml#/components/schemas/Problem
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+      x-repository: PriceOffer
+      summary: Issue Price Offer
+  /v1/variation-envelopes:
+    get:
+      operationId: listVariationEnvelopes
+      tags:
+      - Composition
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: cursor
+        in: query
+        schema:
+          type: string
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 200
+          default: 50
+      - name: jurisdiction
+        in: query
+        schema:
+          type: string
+          example: NL
+      - name: productCode
+        in: query
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Permitted magnitude and frequency of price variation
+          content:
+            application/json:
+              schema:
+                $ref: ./composition.schemas.yaml#/components/schemas/ListEnvelopeVariationEnvelope
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+      x-repository: VariationEnvelope
+      summary: List Variation Envelopes
+    post:
+      operationId: setVariationEnvelope
+      tags:
+      - Composition
+      security:
+      - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./composition.schemas.yaml#/components/schemas/VariationEnvelopeCreate
+      responses:
+        '201':
+          description: Envelope recorded with its filing or rule basis
+          content:
+            application/json:
+              schema:
+                $ref: ./composition.schemas.yaml#/components/schemas/DataEnvelopeVariationEnvelope
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+      x-repository: VariationEnvelope
+      summary: Set Variation Envelope
+components:
+  securitySchemes:
+    apiKey:
+      $ref: ./common/security.yaml#/components/securitySchemes/apiKey
+    bearerAuth:
+      $ref: ./common/security.yaml#/components/securitySchemes/bearerAuth
+  parameters:
+    CompositionId:
+      name: compositionId
+      in: path
+      required: true
+      schema:
+        type: string
+    Cursor:
+      name: cursor
+      in: query
+      schema:
+        type: string
+    Limit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 200
+        default: 50

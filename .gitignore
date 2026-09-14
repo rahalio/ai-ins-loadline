@@ -1,0 +1,25 @@
+node_modules/
+dist/
+.next/
+coverage/
+*.tsbuildinfo
+.DS_Store
+.env
+.env.*
+!.env.example
+packages/openapi-core/src/.bundled/
+**/node_modules/
+**/__pycache__/
+*.pyc
+test-results/
+playwright-report/
+*.log
+.turbo/
+
+# Codegen tooling & generated outputs — do not push
+.codegen/
+codegen/
+**/zero_codegen/
+**/integration-events/generated/
+platform/tests/postman/generated/
+

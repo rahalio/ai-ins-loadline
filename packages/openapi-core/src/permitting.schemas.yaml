@@ -1,0 +1,385 @@
+openapi: 3.1.0
+info:
+  title: Loadline — Permitting schemas
+  version: 0.1.0
+  x-domain: prm
+paths: {}
+components:
+  schemas:
+    DataEnvelopeFactorPermit:
+      type: object
+      required:
+      - data
+      - meta
+      properties:
+        data:
+          $ref: '#/components/schemas/FactorPermit'
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta
+    DataEnvelopeModelValidation:
+      type: object
+      required:
+      - data
+      - meta
+      properties:
+        data:
+          $ref: '#/components/schemas/ModelValidation'
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta
+    DataEnvelopeRiskModel:
+      type: object
+      required:
+      - data
+      - meta
+      properties:
+        data:
+          $ref: '#/components/schemas/RiskModel'
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta
+    DataEnvelopeValidationQueue:
+      type: object
+      required:
+      - data
+      - meta
+      properties:
+        data:
+          $ref: '#/components/schemas/ValidationQueue'
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta
+    FactorPermit:
+      type: object
+      required:
+      - id
+      - factor
+      - jurisdiction
+      - position
+      properties:
+        id:
+          type: string
+        factor:
+          type: string
+          example: residential_postcode_mortality_index
+        dataCategory:
+          $ref: ./common/loadline-primitives.yaml#/components/schemas/DataCategory
+        jurisdiction:
+          type: string
+        position:
+          type: string
+          enum:
+          - permitted
+          - permitted_with_conditions
+          - prohibited
+          - undetermined
+        proxyRiskAssessment:
+          type: string
+          description: Whether the factor proxies a protected characteristic
+        restrictedHealthDataBasis:
+          type: string
+          description: Statutory or moratorium position for genetic and similar data
+        explainableToApplicant:
+          type: boolean
+        conditions:
+          type: array
+          items:
+            type: string
+        officerId:
+          type: string
+        reviewedAt:
+          type: string
+          format: date-time
+        nextReviewDue:
+          type: string
+          format: date
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      x-dynamodb:
+        domain: PERMITTING
+        entityType: FACTOR_PERMIT
+        entityToken: FACTOR_PERMIT
+        skPrefix: FACTOR_PERMIT
+        pkPattern: entity
+        pkPatternTemplate: FACTOR_PERMIT#${permitId}
+        skPatternTemplate: METADATA
+        isChildEntity: false
+        gsi1Enabled: false
+        gsi2Enabled: false
+        gsi3Enabled: false
+        softDeleteEnabled: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        tableType: core
+    FactorPermitCreate:
+      type: object
+      required:
+      - factor
+      - jurisdiction
+      - position
+      - officerId
+      properties:
+        factor:
+          type: string
+        dataCategory:
+          $ref: ./common/loadline-primitives.yaml#/components/schemas/DataCategory
+        jurisdiction:
+          type: string
+        position:
+          type: string
+          enum:
+          - permitted
+          - permitted_with_conditions
+          - prohibited
+          - undetermined
+        proxyRiskAssessment:
+          type: string
+        restrictedHealthDataBasis:
+          type: string
+        explainableToApplicant:
+          type: boolean
+        conditions:
+          type: array
+          items:
+            type: string
+        officerId:
+          type: string
+    ListEnvelopeFactorPermit:
+      type: object
+      required:
+      - data
+      - meta
+      properties:
+        data:
+          type: object
+          required:
+          - items
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/FactorPermit'
+            nextCursor:
+              type: string
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta
+    ListEnvelopeRiskModel:
+      type: object
+      required:
+      - data
+      - meta
+      properties:
+        data:
+          type: object
+          required:
+          - items
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/RiskModel'
+            nextCursor:
+              type: string
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta
+    ModelValidation:
+      type: object
+      required:
+      - modelId
+      - outcome
+      - validatedBy
+      properties:
+        modelId:
+          type: string
+        outcome:
+          type: string
+          enum:
+          - approved
+          - approved_with_conditions
+          - rejected
+        validatedBy:
+          type: string
+        permittedJurisdictions:
+          type: array
+          items:
+            type: string
+        blockedJurisdictions:
+          type: array
+          items:
+            type: string
+        blockedFactors:
+          type: array
+          items:
+            type: string
+        stabilityAssessment:
+          type: string
+        conditions:
+          type: array
+          items:
+            type: string
+        validatedAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      x-dynamodb:
+        domain: PERMITTING
+        entityType: MODEL_VALIDATION
+        entityToken: MODEL_VALIDATION
+        skPrefix: MODEL_VALIDATION
+        pkPattern: entity
+        pkPatternTemplate: MODEL_VALIDATION#${validationId}
+        skPatternTemplate: METADATA
+        isChildEntity: false
+        gsi1Enabled: false
+        gsi2Enabled: false
+        gsi3Enabled: false
+        softDeleteEnabled: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        tableType: core
+    ModelValidationCreate:
+      type: object
+      required:
+      - outcome
+      - validatedBy
+      properties:
+        outcome:
+          type: string
+          enum:
+          - approved
+          - approved_with_conditions
+          - rejected
+        validatedBy:
+          type: string
+        permittedJurisdictions:
+          type: array
+          items:
+            type: string
+        blockedJurisdictions:
+          type: array
+          items:
+            type: string
+        blockedFactors:
+          type: array
+          items:
+            type: string
+        stabilityAssessment:
+          type: string
+        conditions:
+          type: array
+          items:
+            type: string
+    RiskModel:
+      type: object
+      required:
+      - id
+      - name
+      - premiumTerm
+      - state
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        premiumTerm:
+          $ref: ./common/loadline-primitives.yaml#/components/schemas/PremiumTerm
+        target:
+          type: string
+          example: all_cause_mortality_five_year
+        state:
+          type: string
+          enum:
+          - candidate
+          - awaiting_validation
+          - validated
+          - in_production
+          - withdrawn
+        featureNames:
+          type: array
+          items:
+            type: string
+        productionJurisdictions:
+          type: array
+          items:
+            type: string
+        buildMethod:
+          type: string
+          enum:
+          - manual
+          - automated_search
+          - vendor_supplied
+          - reverse_engineered
+        submittedBy:
+          type: string
+        submittedAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      x-dynamodb:
+        domain: PERMITTING
+        entityType: RISK_MODEL
+        entityToken: RISK_MODEL
+        skPrefix: RISK_MODEL
+        pkPattern: entity
+        pkPatternTemplate: RISK_MODEL#${modelId}
+        skPatternTemplate: METADATA
+        isChildEntity: false
+        gsi1Enabled: false
+        gsi2Enabled: false
+        gsi3Enabled: false
+        softDeleteEnabled: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        tableType: core
+    RiskModelCreate:
+      type: object
+      required:
+      - name
+      - premiumTerm
+      - target
+      - featureNames
+      properties:
+        name:
+          type: string
+        premiumTerm:
+          $ref: ./common/loadline-primitives.yaml#/components/schemas/PremiumTerm
+        target:
+          type: string
+        featureNames:
+          type: array
+          items:
+            type: string
+        buildMethod:
+          type: string
+        submittedBy:
+          type: string
+    ValidationQueue:
+      type: object
+      properties:
+        awaitingValidation:
+          type: integer
+        medianAgeDays:
+          type: number
+          format: float
+        oldestAgeDays:
+          type: number
+          format: float
+        byPremiumTerm:
+          type: object
+          additionalProperties:
+            type: integer
+        validationCapacityPerMonth:
+          type: integer
+        flaggedAsOperationalRisk:
+          type: boolean

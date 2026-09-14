@@ -1,0 +1,72 @@
+openapi: 3.1.0
+info:
+  title: Loadline shared primitives
+  version: 0.1.0
+  description: Cross-domain enums and value objects for Loadline.
+paths: {}
+components:
+  schemas:
+    PremiumTerm:
+      type: string
+      description: The term of the price a model or lever acts on
+      enum:
+      - expected_claims
+      - loading_for_risk
+      - loading_for_expense
+    Money:
+      type: object
+      required:
+      - amount
+      - currency
+      properties:
+        amount:
+          type: number
+          format: double
+        currency:
+          type: string
+          example: EUR
+    ProcessingPurpose:
+      type: string
+      enum:
+      - underwriting
+      - pricing
+      - renewal_pricing
+      - engagement_service
+      - claims_assessment
+      - fraud_detection
+      - experience_study
+    DataCategory:
+      type: string
+      enum:
+      - connected_life
+      - connected_car
+      - connected_home
+      - connected_finance
+      - medical_evidence
+      - genetic
+      - epigenetic
+      - microbiome
+      - geographic
+      - declared_lifestyle
+      - population_table
+    Feature:
+      type: object
+      required:
+      - name
+      - dataCategory
+      properties:
+        name:
+          type: string
+          example: mean_weekly_active_minutes
+        dataCategory:
+          $ref: '#/components/schemas/DataCategory'
+        value:
+          type: string
+        observedFrom:
+          type: string
+          format: date
+        observedTo:
+          type: string
+          format: date
+        consentRecordId:
+          type: string

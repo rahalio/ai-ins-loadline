@@ -1,0 +1,237 @@
+openapi: 3.1.0
+info:
+  title: Loadline — Permitting
+  version: 0.1.0
+  description: Factor permits per jurisdiction and the model validation queue.
+  license:
+    name: Proprietary
+  x-domain: prm
+  x-product-slug: ai-ins-loadline
+servers:
+- url: https://api.loadline.local
+  description: Local API
+- url: /
+  description: Relative
+security:
+- apiKey: []
+tags:
+- name: Permitting
+  description: Factor permits per jurisdiction and model validation queue
+paths:
+  /v1/permitting/factor-permits:
+    get:
+      operationId: listFactorPermits
+      tags:
+      - Permitting
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: cursor
+        in: query
+        schema:
+          type: string
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 200
+          default: 50
+      - name: jurisdiction
+        in: query
+        schema:
+          type: string
+      - name: position
+        in: query
+        schema:
+          type: string
+          enum:
+          - permitted
+          - permitted_with_conditions
+          - prohibited
+          - undetermined
+      - name: dataCategory
+        in: query
+        schema:
+          $ref: ./common/loadline-primitives.yaml#/components/schemas/DataCategory
+      responses:
+        '200':
+          description: Per-factor, per-jurisdiction permitted-use positions
+          content:
+            application/json:
+              schema:
+                $ref: ./permitting.schemas.yaml#/components/schemas/ListEnvelopeFactorPermit
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+      x-repository: FactorPermit
+      summary: List Factor Permits
+    post:
+      operationId: recordFactorPermit
+      tags:
+      - Permitting
+      security:
+      - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./permitting.schemas.yaml#/components/schemas/FactorPermitCreate
+      responses:
+        '201':
+          description: Position recorded by a named compliance officer
+          content:
+            application/json:
+              schema:
+                $ref: ./permitting.schemas.yaml#/components/schemas/DataEnvelopeFactorPermit
+        '422':
+          $ref: ./common/responses.yaml#/components/responses/UnprocessableEntity
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+      x-repository: FactorPermit
+      summary: Record Factor Permit
+  /v1/permitting/models:
+    get:
+      operationId: listRiskModels
+      tags:
+      - Permitting
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: cursor
+        in: query
+        schema:
+          type: string
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 200
+          default: 50
+      - name: premiumTerm
+        in: query
+        schema:
+          $ref: ./common/loadline-primitives.yaml#/components/schemas/PremiumTerm
+      - name: state
+        in: query
+        schema:
+          type: string
+          enum:
+          - candidate
+          - awaiting_validation
+          - validated
+          - in_production
+          - withdrawn
+      responses:
+        '200':
+          description: Models with declared premium term and validation state
+          content:
+            application/json:
+              schema:
+                $ref: ./permitting.schemas.yaml#/components/schemas/ListEnvelopeRiskModel
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+      x-repository: RiskModel
+      summary: List Risk Models
+    post:
+      operationId: submitRiskModel
+      tags:
+      - Permitting
+      security:
+      - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./permitting.schemas.yaml#/components/schemas/RiskModelCreate
+      responses:
+        '201':
+          description: Model queued for validation with its declared premium term
+          content:
+            application/json:
+              schema:
+                $ref: ./permitting.schemas.yaml#/components/schemas/DataEnvelopeRiskModel
+        '422':
+          description: Rejected because no premium term was declared. A model that cannot name the term
+            of the price it acts on may not be deployed.
+          content:
+            application/json:
+              schema:
+                $ref: ./common/problem.yaml#/components/schemas/Problem
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+      x-repository: RiskModel
+      summary: Submit Risk Model
+  /v1/permitting/models/{modelId}/validation:
+    parameters:
+    - $ref: '#/components/parameters/ModelId'
+    post:
+      operationId: validateRiskModel
+      tags:
+      - Permitting
+      security:
+      - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./permitting.schemas.yaml#/components/schemas/ModelValidationCreate
+      responses:
+        '200':
+          description: Validation outcome and production permission by jurisdiction
+          content:
+            application/json:
+              schema:
+                $ref: ./permitting.schemas.yaml#/components/schemas/DataEnvelopeModelValidation
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+      x-repository: ModelValidation
+      summary: Validate Risk Model
+  /v1/permitting/validation-queue:
+    get:
+      operationId: getValidationQueue
+      tags:
+      - Permitting
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Queue depth and ageing for candidate models, reported as operational risk since
+            model production outpaces validation capacity.
+          content:
+            application/json:
+              schema:
+                $ref: ./permitting.schemas.yaml#/components/schemas/DataEnvelopeValidationQueue
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+      x-repository: ValidationQueue
+      summary: Get Validation Queue
+components:
+  securitySchemes:
+    apiKey:
+      $ref: ./common/security.yaml#/components/securitySchemes/apiKey
+    bearerAuth:
+      $ref: ./common/security.yaml#/components/securitySchemes/bearerAuth
+  parameters:
+    Cursor:
+      name: cursor
+      in: query
+      schema:
+        type: string
+    Limit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 200
+        default: 50
+    ModelId:
+      name: modelId
+      in: path
+      required: true
+      schema:
+        type: string

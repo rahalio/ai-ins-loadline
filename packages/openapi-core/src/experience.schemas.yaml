@@ -1,0 +1,290 @@
+openapi: 3.1.0
+info:
+  title: Loadline — Experience schemas
+  version: 0.1.0
+  x-domain: exp
+paths: {}
+components:
+  schemas:
+    CohortDefinition:
+      type: object
+      required:
+      - id
+      - programmeId
+      - cohortKind
+      properties:
+        id:
+          type: string
+        programmeId:
+          type: string
+        cohortKind:
+          type: string
+          enum:
+          - engaged
+          - matched_unengaged
+        matchedOn:
+          type: array
+          items:
+            type: string
+          example:
+          - attained_age
+          - sex
+          - product
+          - underwriting_class
+          - duration
+        selectionSeparationMethod:
+          type: string
+          enum:
+          - propensity_matching
+          - stratified_comparison
+          - randomised_offer
+          - instrumental_variable
+        memberCount:
+          type: integer
+        observationWindowMonths:
+          type: integer
+        comparableCohortId:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      x-dynamodb:
+        domain: EXPERIENCE
+        entityType: COHORT_DEFINITION
+        entityToken: COHORT_DEFINITION
+        skPrefix: COHORT_DEFINITION
+        pkPattern: entity
+        pkPatternTemplate: COHORT_DEFINITION#${cohortId}
+        skPatternTemplate: METADATA
+        isChildEntity: false
+        gsi1Enabled: false
+        gsi2Enabled: false
+        gsi3Enabled: false
+        softDeleteEnabled: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        tableType: core
+    CohortDefinitionCreate:
+      type: object
+      required:
+      - programmeId
+      - cohortKind
+      - selectionSeparationMethod
+      properties:
+        programmeId:
+          type: string
+        cohortKind:
+          type: string
+          enum:
+          - engaged
+          - matched_unengaged
+        matchedOn:
+          type: array
+          items:
+            type: string
+        selectionSeparationMethod:
+          type: string
+        observationWindowMonths:
+          type: integer
+        comparableCohortId:
+          type: string
+    DataEnvelopeCohortDefinition:
+      type: object
+      required:
+      - data
+      - meta
+      properties:
+        data:
+          $ref: '#/components/schemas/CohortDefinition'
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta
+    DataEnvelopeSavingsCredit:
+      type: object
+      required:
+      - data
+      - meta
+      properties:
+        data:
+          $ref: '#/components/schemas/SavingsCredit'
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta
+    ExperienceObservation:
+      type: object
+      required:
+      - cohortId
+      - period
+      properties:
+        cohortId:
+          type: string
+        period:
+          type: string
+        exposureYears:
+          type: number
+          format: float
+        actualClaims:
+          $ref: ./common/loadline-primitives.yaml#/components/schemas/Money
+        expectedClaims:
+          $ref: ./common/loadline-primitives.yaml#/components/schemas/Money
+        actualToExpected:
+          type: number
+          format: float
+        lapseRate:
+          type: number
+          format: float
+        persistencyRate:
+          type: number
+          format: float
+        unengagedActualToExpected:
+          type: number
+          format: float
+        estimatedSelectionEffect:
+          type: number
+          format: float
+        windowComplete:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      x-dynamodb:
+        domain: EXPERIENCE
+        entityType: EXPERIENCE_OBSERVATION
+        entityToken: EXPERIENCE_OBSERVATION
+        skPrefix: EXPERIENCE_OBSERVATION
+        pkPattern: entity
+        pkPatternTemplate: EXPERIENCE_OBSERVATION#${observationId}
+        skPatternTemplate: METADATA
+        isChildEntity: false
+        gsi1Enabled: false
+        gsi2Enabled: false
+        gsi3Enabled: false
+        softDeleteEnabled: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        tableType: core
+    ListEnvelopeCohortDefinition:
+      type: object
+      required:
+      - data
+      - meta
+      properties:
+        data:
+          type: object
+          required:
+          - items
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/CohortDefinition'
+            nextCursor:
+              type: string
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta
+    ListEnvelopeExperienceObservation:
+      type: object
+      required:
+      - data
+      - meta
+      properties:
+        data:
+          type: object
+          required:
+          - items
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/ExperienceObservation'
+            nextCursor:
+              type: string
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta
+    SavingsCredit:
+      type: object
+      required:
+      - id
+      - cohortId
+      - premiumTerm
+      - status
+      properties:
+        id:
+          type: string
+        cohortId:
+          type: string
+        premiumTerm:
+          $ref: ./common/loadline-primitives.yaml#/components/schemas/PremiumTerm
+        creditedBasisPoints:
+          type: number
+          format: float
+        behaviouralEffect:
+          type: number
+          format: float
+        selectionEffectRemoved:
+          type: number
+          format: float
+        persistencyImpact:
+          type: number
+          format: float
+        status:
+          type: string
+          enum:
+          - credited
+          - refused
+          - withdrawn
+        signedOffBy:
+          type: string
+        appliesFromPeriod:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      x-dynamodb:
+        domain: EXPERIENCE
+        entityType: SAVINGS_CREDIT
+        entityToken: SAVINGS_CREDIT
+        skPrefix: SAVINGS_CREDIT
+        pkPattern: entity
+        pkPatternTemplate: SAVINGS_CREDIT#${creditId}
+        skPatternTemplate: METADATA
+        isChildEntity: false
+        gsi1Enabled: false
+        gsi2Enabled: false
+        gsi3Enabled: false
+        softDeleteEnabled: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        tableType: core
+    SavingsCreditCreate:
+      type: object
+      required:
+      - cohortId
+      - premiumTerm
+      - creditedBasisPoints
+      - signedOffBy
+      properties:
+        cohortId:
+          type: string
+        premiumTerm:
+          $ref: ./common/loadline-primitives.yaml#/components/schemas/PremiumTerm
+        creditedBasisPoints:
+          type: number
+          format: float
+        behaviouralEffect:
+          type: number
+          format: float
+        selectionEffectRemoved:
+          type: number
+          format: float
+        signedOffBy:
+          type: string
+        appliesFromPeriod:
+          type: string

@@ -1,0 +1,971 @@
+import { makeApi, Zodios, type ZodiosOptions } from '@zodios/core';
+import { z } from 'zod';
+
+const recordConsentChange_Body = z
+  .object({
+    dataCategory: z.enum([
+      'connected_life',
+      'connected_car',
+      'connected_home',
+      'connected_finance',
+      'medical_evidence',
+      'genetic',
+      'epigenetic',
+      'microbiome',
+      'geographic',
+      'declared_lifestyle',
+      'population_table',
+    ]),
+    purposes: z.array(
+      z.enum([
+        'underwriting',
+        'pricing',
+        'renewal_pricing',
+        'engagement_service',
+        'claims_assessment',
+        'fraud_detection',
+        'experience_study',
+      ])
+    ),
+    state: z.enum(['granted', 'withdrawn', 'expired']),
+    lawfulBasis: z.string().optional(),
+  })
+  .passthrough();
+const scoreRiskSubject_Body = z
+  .object({
+    riskSubjectId: z.string(),
+    applicationReference: z.string().optional(),
+    jurisdiction: z.string(),
+    productCode: z.string(),
+    purpose: z.enum([
+      'underwriting',
+      'pricing',
+      'renewal_pricing',
+      'engagement_service',
+      'claims_assessment',
+      'fraud_detection',
+      'experience_study',
+    ]),
+    features: z
+      .array(
+        z
+          .object({
+            name: z.string(),
+            dataCategory: z.enum([
+              'connected_life',
+              'connected_car',
+              'connected_home',
+              'connected_finance',
+              'medical_evidence',
+              'genetic',
+              'epigenetic',
+              'microbiome',
+              'geographic',
+              'declared_lifestyle',
+              'population_table',
+            ]),
+            value: z.string().optional(),
+            observedFrom: z.string().optional(),
+            observedTo: z.string().optional(),
+            consentRecordId: z.string().optional(),
+          })
+          .passthrough()
+      )
+      .optional(),
+  })
+  .passthrough();
+const ProcessingPurpose = z.enum([
+  'underwriting',
+  'pricing',
+  'renewal_pricing',
+  'engagement_service',
+  'claims_assessment',
+  'fraud_detection',
+  'experience_study',
+]);
+const Problem = z
+  .object({
+    type: z.string().url(),
+    title: z.string(),
+    status: z.number().int(),
+    detail: z.string(),
+    instance: z.string().url(),
+    code: z.string(),
+  })
+  .partial()
+  .passthrough();
+const DataCategory = z.enum([
+  'connected_life',
+  'connected_car',
+  'connected_home',
+  'connected_finance',
+  'medical_evidence',
+  'genetic',
+  'epigenetic',
+  'microbiome',
+  'geographic',
+  'declared_lifestyle',
+  'population_table',
+]);
+const ConsentState = z
+  .object({
+    riskSubjectId: z.string(),
+    purpose: z.enum([
+      'underwriting',
+      'pricing',
+      'renewal_pricing',
+      'engagement_service',
+      'claims_assessment',
+      'fraud_detection',
+      'experience_study',
+    ]),
+    permittedCategories: z.array(
+      z.enum([
+        'connected_life',
+        'connected_car',
+        'connected_home',
+        'connected_finance',
+        'medical_evidence',
+        'genetic',
+        'epigenetic',
+        'microbiome',
+        'geographic',
+        'declared_lifestyle',
+        'population_table',
+      ])
+    ),
+    blockedCategories: z.array(
+      z.enum([
+        'connected_life',
+        'connected_car',
+        'connected_home',
+        'connected_finance',
+        'medical_evidence',
+        'genetic',
+        'epigenetic',
+        'microbiome',
+        'geographic',
+        'declared_lifestyle',
+        'population_table',
+      ])
+    ),
+    coverageNote: z.string(),
+    resolvedAt: z.string().datetime({ offset: true }),
+  })
+  .partial()
+  .passthrough();
+const ResponseMeta = z
+  .object({
+    requestId: z.string().uuid(),
+    correlationId: z.string(),
+    generatedAt: z.string().datetime({ offset: true }),
+  })
+  .partial()
+  .passthrough();
+const DataEnvelopeConsentState = z
+  .object({
+    data: z
+      .object({
+        riskSubjectId: z.string(),
+        purpose: z.enum([
+          'underwriting',
+          'pricing',
+          'renewal_pricing',
+          'engagement_service',
+          'claims_assessment',
+          'fraud_detection',
+          'experience_study',
+        ]),
+        permittedCategories: z.array(
+          z.enum([
+            'connected_life',
+            'connected_car',
+            'connected_home',
+            'connected_finance',
+            'medical_evidence',
+            'genetic',
+            'epigenetic',
+            'microbiome',
+            'geographic',
+            'declared_lifestyle',
+            'population_table',
+          ])
+        ),
+        blockedCategories: z.array(
+          z.enum([
+            'connected_life',
+            'connected_car',
+            'connected_home',
+            'connected_finance',
+            'medical_evidence',
+            'genetic',
+            'epigenetic',
+            'microbiome',
+            'geographic',
+            'declared_lifestyle',
+            'population_table',
+          ])
+        ),
+        coverageNote: z.string(),
+        resolvedAt: z.string().datetime({ offset: true }),
+      })
+      .partial()
+      .passthrough(),
+    meta: z
+      .object({
+        requestId: z.string().uuid(),
+        correlationId: z.string(),
+        generatedAt: z.string().datetime({ offset: true }),
+      })
+      .partial()
+      .passthrough(),
+  })
+  .passthrough();
+const ConsentRecordCreate = z
+  .object({
+    dataCategory: z.enum([
+      'connected_life',
+      'connected_car',
+      'connected_home',
+      'connected_finance',
+      'medical_evidence',
+      'genetic',
+      'epigenetic',
+      'microbiome',
+      'geographic',
+      'declared_lifestyle',
+      'population_table',
+    ]),
+    purposes: z.array(
+      z.enum([
+        'underwriting',
+        'pricing',
+        'renewal_pricing',
+        'engagement_service',
+        'claims_assessment',
+        'fraud_detection',
+        'experience_study',
+      ])
+    ),
+    state: z.enum(['granted', 'withdrawn', 'expired']),
+    lawfulBasis: z.string().optional(),
+  })
+  .passthrough();
+const ConsentRecord = z
+  .object({
+    id: z.string(),
+    riskSubjectId: z.string(),
+    dataCategory: z.enum([
+      'connected_life',
+      'connected_car',
+      'connected_home',
+      'connected_finance',
+      'medical_evidence',
+      'genetic',
+      'epigenetic',
+      'microbiome',
+      'geographic',
+      'declared_lifestyle',
+      'population_table',
+    ]),
+    purposes: z
+      .array(
+        z.enum([
+          'underwriting',
+          'pricing',
+          'renewal_pricing',
+          'engagement_service',
+          'claims_assessment',
+          'fraud_detection',
+          'experience_study',
+        ])
+      )
+      .optional(),
+    state: z.enum(['granted', 'withdrawn', 'expired']),
+    lawfulBasis: z
+      .enum([
+        'explicit_consent',
+        'contract',
+        'legitimate_interest',
+        'vital_interest',
+      ])
+      .optional(),
+    grantedAt: z.string().datetime({ offset: true }).optional(),
+    withdrawnAt: z.string().datetime({ offset: true }).optional(),
+    fallbackApplied: z.string().optional(),
+    createdAt: z.string().datetime({ offset: true }).optional(),
+    updatedAt: z.string().datetime({ offset: true }).optional(),
+  })
+  .passthrough();
+const DataEnvelopeConsentRecord = z
+  .object({
+    data: z
+      .object({
+        id: z.string(),
+        riskSubjectId: z.string(),
+        dataCategory: z.enum([
+          'connected_life',
+          'connected_car',
+          'connected_home',
+          'connected_finance',
+          'medical_evidence',
+          'genetic',
+          'epigenetic',
+          'microbiome',
+          'geographic',
+          'declared_lifestyle',
+          'population_table',
+        ]),
+        purposes: z
+          .array(
+            z.enum([
+              'underwriting',
+              'pricing',
+              'renewal_pricing',
+              'engagement_service',
+              'claims_assessment',
+              'fraud_detection',
+              'experience_study',
+            ])
+          )
+          .optional(),
+        state: z.enum(['granted', 'withdrawn', 'expired']),
+        lawfulBasis: z
+          .enum([
+            'explicit_consent',
+            'contract',
+            'legitimate_interest',
+            'vital_interest',
+          ])
+          .optional(),
+        grantedAt: z.string().datetime({ offset: true }).optional(),
+        withdrawnAt: z.string().datetime({ offset: true }).optional(),
+        fallbackApplied: z.string().optional(),
+        createdAt: z.string().datetime({ offset: true }).optional(),
+        updatedAt: z.string().datetime({ offset: true }).optional(),
+      })
+      .passthrough(),
+    meta: z
+      .object({
+        requestId: z.string().uuid(),
+        correlationId: z.string(),
+        generatedAt: z.string().datetime({ offset: true }),
+      })
+      .partial()
+      .passthrough(),
+  })
+  .passthrough();
+const Feature = z
+  .object({
+    name: z.string(),
+    dataCategory: z.enum([
+      'connected_life',
+      'connected_car',
+      'connected_home',
+      'connected_finance',
+      'medical_evidence',
+      'genetic',
+      'epigenetic',
+      'microbiome',
+      'geographic',
+      'declared_lifestyle',
+      'population_table',
+    ]),
+    value: z.string().optional(),
+    observedFrom: z.string().optional(),
+    observedTo: z.string().optional(),
+    consentRecordId: z.string().optional(),
+  })
+  .passthrough();
+const ScoreRequest = z
+  .object({
+    riskSubjectId: z.string(),
+    applicationReference: z.string().optional(),
+    jurisdiction: z.string(),
+    productCode: z.string(),
+    purpose: z.enum([
+      'underwriting',
+      'pricing',
+      'renewal_pricing',
+      'engagement_service',
+      'claims_assessment',
+      'fraud_detection',
+      'experience_study',
+    ]),
+    features: z
+      .array(
+        z
+          .object({
+            name: z.string(),
+            dataCategory: z.enum([
+              'connected_life',
+              'connected_car',
+              'connected_home',
+              'connected_finance',
+              'medical_evidence',
+              'genetic',
+              'epigenetic',
+              'microbiome',
+              'geographic',
+              'declared_lifestyle',
+              'population_table',
+            ]),
+            value: z.string().optional(),
+            observedFrom: z.string().optional(),
+            observedTo: z.string().optional(),
+            consentRecordId: z.string().optional(),
+          })
+          .passthrough()
+      )
+      .optional(),
+  })
+  .passthrough();
+const PremiumTerm = z.enum([
+  'expected_claims',
+  'loading_for_risk',
+  'loading_for_expense',
+]);
+const ScoreContribution = z
+  .object({
+    modelId: z.string(),
+    modelVersion: z.string().optional(),
+    premiumTerm: z.enum([
+      'expected_claims',
+      'loading_for_risk',
+      'loading_for_expense',
+    ]),
+    contributionValue: z.number().optional(),
+    unit: z
+      .enum(['relative_multiplier', 'absolute_amount', 'rate_per_mille'])
+      .optional(),
+    confidence: z.number().optional(),
+  })
+  .passthrough();
+const ScoreResult = z
+  .object({
+    id: z.string(),
+    riskSubjectId: z.string(),
+    jurisdiction: z.string().optional(),
+    productCode: z.string().optional(),
+    contributions: z.array(
+      z
+        .object({
+          modelId: z.string(),
+          modelVersion: z.string().optional(),
+          premiumTerm: z.enum([
+            'expected_claims',
+            'loading_for_risk',
+            'loading_for_expense',
+          ]),
+          contributionValue: z.number().optional(),
+          unit: z
+            .enum(['relative_multiplier', 'absolute_amount', 'rate_per_mille'])
+            .optional(),
+          confidence: z.number().optional(),
+        })
+        .passthrough()
+    ),
+    featuresUsed: z.array(z.string()).optional(),
+    featuresSuppressed: z
+      .array(
+        z
+          .object({
+            name: z.string(),
+            reason: z.enum([
+              'prohibited_factor',
+              'consent_absent',
+              'restricted_health_data',
+              'undetermined_permit',
+            ]),
+          })
+          .partial()
+          .passthrough()
+      )
+      .optional(),
+    scoredAt: z.string().datetime({ offset: true }).optional(),
+    createdAt: z.string().datetime({ offset: true }).optional(),
+    updatedAt: z.string().datetime({ offset: true }).optional(),
+  })
+  .passthrough();
+const DataEnvelopeScoreResult = z
+  .object({
+    data: z
+      .object({
+        id: z.string(),
+        riskSubjectId: z.string(),
+        jurisdiction: z.string().optional(),
+        productCode: z.string().optional(),
+        contributions: z.array(
+          z
+            .object({
+              modelId: z.string(),
+              modelVersion: z.string().optional(),
+              premiumTerm: z.enum([
+                'expected_claims',
+                'loading_for_risk',
+                'loading_for_expense',
+              ]),
+              contributionValue: z.number().optional(),
+              unit: z
+                .enum([
+                  'relative_multiplier',
+                  'absolute_amount',
+                  'rate_per_mille',
+                ])
+                .optional(),
+              confidence: z.number().optional(),
+            })
+            .passthrough()
+        ),
+        featuresUsed: z.array(z.string()).optional(),
+        featuresSuppressed: z
+          .array(
+            z
+              .object({
+                name: z.string(),
+                reason: z.enum([
+                  'prohibited_factor',
+                  'consent_absent',
+                  'restricted_health_data',
+                  'undetermined_permit',
+                ]),
+              })
+              .partial()
+              .passthrough()
+          )
+          .optional(),
+        scoredAt: z.string().datetime({ offset: true }).optional(),
+        createdAt: z.string().datetime({ offset: true }).optional(),
+        updatedAt: z.string().datetime({ offset: true }).optional(),
+      })
+      .passthrough(),
+    meta: z
+      .object({
+        requestId: z.string().uuid(),
+        correlationId: z.string(),
+        generatedAt: z.string().datetime({ offset: true }),
+      })
+      .partial()
+      .passthrough(),
+  })
+  .passthrough();
+const ScoreExplanation = z
+  .object({
+    scoreId: z.string(),
+    factors: z.array(
+      z
+        .object({
+          factor: z.string(),
+          ratingBasisMapping: z.string(),
+          direction: z.enum(['increases_risk', 'decreases_risk']),
+          magnitude: z.number(),
+          permitId: z.string(),
+        })
+        .partial()
+        .passthrough()
+    ),
+    applicantDisclosureText: z.string(),
+    humanReviewRoute: z.string(),
+  })
+  .partial()
+  .passthrough();
+const DataEnvelopeScoreExplanation = z
+  .object({
+    data: z
+      .object({
+        scoreId: z.string(),
+        factors: z.array(
+          z
+            .object({
+              factor: z.string(),
+              ratingBasisMapping: z.string(),
+              direction: z.enum(['increases_risk', 'decreases_risk']),
+              magnitude: z.number(),
+              permitId: z.string(),
+            })
+            .partial()
+            .passthrough()
+        ),
+        applicantDisclosureText: z.string(),
+        humanReviewRoute: z.string(),
+      })
+      .partial()
+      .passthrough(),
+    meta: z
+      .object({
+        requestId: z.string().uuid(),
+        correlationId: z.string(),
+        generatedAt: z.string().datetime({ offset: true }),
+      })
+      .partial()
+      .passthrough(),
+  })
+  .passthrough();
+
+export const schemas: any = {
+  recordConsentChange_Body,
+  scoreRiskSubject_Body,
+  ProcessingPurpose,
+  Problem,
+  DataCategory,
+  ConsentState,
+  ResponseMeta,
+  DataEnvelopeConsentState,
+  ConsentRecordCreate,
+  ConsentRecord,
+  DataEnvelopeConsentRecord,
+  Feature,
+  ScoreRequest,
+  PremiumTerm,
+  ScoreContribution,
+  ScoreResult,
+  DataEnvelopeScoreResult,
+  ScoreExplanation,
+  DataEnvelopeScoreExplanation,
+};
+
+const endpoints = makeApi([
+  {
+    method: 'get',
+    path: '/v1/risk-subjects/:riskSubjectId/consent',
+    alias: 'resolveConsentState',
+    requestFormat: 'json',
+    parameters: [
+      {
+        name: 'riskSubjectId',
+        type: 'Path',
+        schema: z.string(),
+      },
+      {
+        name: 'purpose',
+        type: 'Query',
+        schema: z
+          .enum([
+            'underwriting',
+            'pricing',
+            'renewal_pricing',
+            'engagement_service',
+            'claims_assessment',
+            'fraud_detection',
+            'experience_study',
+          ])
+          .optional(),
+      },
+    ],
+    response: z
+      .object({
+        data: z
+          .object({
+            riskSubjectId: z.string(),
+            purpose: z.enum([
+              'underwriting',
+              'pricing',
+              'renewal_pricing',
+              'engagement_service',
+              'claims_assessment',
+              'fraud_detection',
+              'experience_study',
+            ]),
+            permittedCategories: z.array(
+              z.enum([
+                'connected_life',
+                'connected_car',
+                'connected_home',
+                'connected_finance',
+                'medical_evidence',
+                'genetic',
+                'epigenetic',
+                'microbiome',
+                'geographic',
+                'declared_lifestyle',
+                'population_table',
+              ])
+            ),
+            blockedCategories: z.array(
+              z.enum([
+                'connected_life',
+                'connected_car',
+                'connected_home',
+                'connected_finance',
+                'medical_evidence',
+                'genetic',
+                'epigenetic',
+                'microbiome',
+                'geographic',
+                'declared_lifestyle',
+                'population_table',
+              ])
+            ),
+            coverageNote: z.string(),
+            resolvedAt: z.string().datetime({ offset: true }),
+          })
+          .partial()
+          .passthrough(),
+        meta: z
+          .object({
+            requestId: z.string().uuid(),
+            correlationId: z.string(),
+            generatedAt: z.string().datetime({ offset: true }),
+          })
+          .partial()
+          .passthrough(),
+      })
+      .passthrough(),
+    errors: [
+      {
+        status: 401,
+        description: `Missing or invalid API key`,
+        schema: z
+          .object({
+            type: z.string().url(),
+            title: z.string(),
+            status: z.number().int(),
+            detail: z.string(),
+            instance: z.string().url(),
+            code: z.string(),
+          })
+          .partial()
+          .passthrough(),
+      },
+    ],
+  },
+  {
+    method: 'post',
+    path: '/v1/risk-subjects/:riskSubjectId/consent',
+    alias: 'recordConsentChange',
+    requestFormat: 'json',
+    parameters: [
+      {
+        name: 'body',
+        type: 'Body',
+        schema: recordConsentChange_Body,
+      },
+      {
+        name: 'riskSubjectId',
+        type: 'Path',
+        schema: z.string(),
+      },
+    ],
+    response: z
+      .object({
+        data: z
+          .object({
+            id: z.string(),
+            riskSubjectId: z.string(),
+            dataCategory: z.enum([
+              'connected_life',
+              'connected_car',
+              'connected_home',
+              'connected_finance',
+              'medical_evidence',
+              'genetic',
+              'epigenetic',
+              'microbiome',
+              'geographic',
+              'declared_lifestyle',
+              'population_table',
+            ]),
+            purposes: z
+              .array(
+                z.enum([
+                  'underwriting',
+                  'pricing',
+                  'renewal_pricing',
+                  'engagement_service',
+                  'claims_assessment',
+                  'fraud_detection',
+                  'experience_study',
+                ])
+              )
+              .optional(),
+            state: z.enum(['granted', 'withdrawn', 'expired']),
+            lawfulBasis: z
+              .enum([
+                'explicit_consent',
+                'contract',
+                'legitimate_interest',
+                'vital_interest',
+              ])
+              .optional(),
+            grantedAt: z.string().datetime({ offset: true }).optional(),
+            withdrawnAt: z.string().datetime({ offset: true }).optional(),
+            fallbackApplied: z.string().optional(),
+            createdAt: z.string().datetime({ offset: true }).optional(),
+            updatedAt: z.string().datetime({ offset: true }).optional(),
+          })
+          .passthrough(),
+        meta: z
+          .object({
+            requestId: z.string().uuid(),
+            correlationId: z.string(),
+            generatedAt: z.string().datetime({ offset: true }),
+          })
+          .partial()
+          .passthrough(),
+      })
+      .passthrough(),
+  },
+  {
+    method: 'post',
+    path: '/v1/scores',
+    alias: 'scoreRiskSubject',
+    requestFormat: 'json',
+    parameters: [
+      {
+        name: 'body',
+        type: 'Body',
+        schema: scoreRiskSubject_Body,
+      },
+    ],
+    response: z
+      .object({
+        data: z
+          .object({
+            id: z.string(),
+            riskSubjectId: z.string(),
+            jurisdiction: z.string().optional(),
+            productCode: z.string().optional(),
+            contributions: z.array(
+              z
+                .object({
+                  modelId: z.string(),
+                  modelVersion: z.string().optional(),
+                  premiumTerm: z.enum([
+                    'expected_claims',
+                    'loading_for_risk',
+                    'loading_for_expense',
+                  ]),
+                  contributionValue: z.number().optional(),
+                  unit: z
+                    .enum([
+                      'relative_multiplier',
+                      'absolute_amount',
+                      'rate_per_mille',
+                    ])
+                    .optional(),
+                  confidence: z.number().optional(),
+                })
+                .passthrough()
+            ),
+            featuresUsed: z.array(z.string()).optional(),
+            featuresSuppressed: z
+              .array(
+                z
+                  .object({
+                    name: z.string(),
+                    reason: z.enum([
+                      'prohibited_factor',
+                      'consent_absent',
+                      'restricted_health_data',
+                      'undetermined_permit',
+                    ]),
+                  })
+                  .partial()
+                  .passthrough()
+              )
+              .optional(),
+            scoredAt: z.string().datetime({ offset: true }).optional(),
+            createdAt: z.string().datetime({ offset: true }).optional(),
+            updatedAt: z.string().datetime({ offset: true }).optional(),
+          })
+          .passthrough(),
+        meta: z
+          .object({
+            requestId: z.string().uuid(),
+            correlationId: z.string(),
+            generatedAt: z.string().datetime({ offset: true }),
+          })
+          .partial()
+          .passthrough(),
+      })
+      .passthrough(),
+    errors: [
+      {
+        status: 409,
+        description: `Scoring refused. Raised when a required feature has no permitted-use position for the jurisdiction, when consent is absent for the purpose, or when restricted health data such as genetic results is in scope.`,
+        schema: z
+          .object({
+            type: z.string().url(),
+            title: z.string(),
+            status: z.number().int(),
+            detail: z.string(),
+            instance: z.string().url(),
+            code: z.string(),
+          })
+          .partial()
+          .passthrough(),
+      },
+    ],
+  },
+  {
+    method: 'get',
+    path: '/v1/scores/:scoreId/explanation',
+    alias: 'getScoreExplanation',
+    requestFormat: 'json',
+    parameters: [
+      {
+        name: 'scoreId',
+        type: 'Path',
+        schema: z.string(),
+      },
+    ],
+    response: z
+      .object({
+        data: z
+          .object({
+            scoreId: z.string(),
+            factors: z.array(
+              z
+                .object({
+                  factor: z.string(),
+                  ratingBasisMapping: z.string(),
+                  direction: z.enum(['increases_risk', 'decreases_risk']),
+                  magnitude: z.number(),
+                  permitId: z.string(),
+                })
+                .partial()
+                .passthrough()
+            ),
+            applicantDisclosureText: z.string(),
+            humanReviewRoute: z.string(),
+          })
+          .partial()
+          .passthrough(),
+        meta: z
+          .object({
+            requestId: z.string().uuid(),
+            correlationId: z.string(),
+            generatedAt: z.string().datetime({ offset: true }),
+          })
+          .partial()
+          .passthrough(),
+      })
+      .passthrough(),
+    errors: [
+      {
+        status: 404,
+        description: `Resource not found`,
+        schema: z
+          .object({
+            type: z.string().url(),
+            title: z.string(),
+            status: z.number().int(),
+            detail: z.string(),
+            instance: z.string().url(),
+            code: z.string(),
+          })
+          .partial()
+          .passthrough(),
+      },
+    ],
+  },
+]);
+
+export const api: any = new Zodios(
+  'https://api.ddd-codegen-starter.local/v1',
+  endpoints
+);
+
+export function createApiClient(baseUrl: string, options?: ZodiosOptions): any {
+  return new Zodios(baseUrl, endpoints, options);
+}

@@ -1,0 +1,361 @@
+openapi: 3.1.0
+info:
+  title: Loadline — Composition schemas
+  version: 0.1.0
+  x-domain: cmp
+paths: {}
+components:
+  schemas:
+    CommercialCalibration:
+      type: object
+      required:
+      - compositionId
+      - calibratedPrice
+      - rationale
+      - approvedBy
+      properties:
+        compositionId:
+          type: string
+        technicalCost:
+          $ref: ./common/loadline-primitives.yaml#/components/schemas/Money
+        calibratedPrice:
+          $ref: ./common/loadline-primitives.yaml#/components/schemas/Money
+        deltaPercent:
+          type: number
+          format: float
+        rationale:
+          type: string
+          enum:
+          - competitive_position
+          - channel_terms
+          - new_business_strain
+          - retention_objective
+          - portfolio_steering
+        narrative:
+          type: string
+        approvedBy:
+          type: string
+        approvedAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      x-dynamodb:
+        domain: COMPOSITION
+        entityType: COMMERCIAL_CALIBRATION
+        entityToken: COMMERCIAL_CALIBRATION
+        skPrefix: COMMERCIAL_CALIBRATION
+        pkPattern: entity
+        pkPatternTemplate: COMMERCIAL_CALIBRATION#${calibrationId}
+        skPatternTemplate: METADATA
+        isChildEntity: false
+        gsi1Enabled: false
+        gsi2Enabled: false
+        gsi3Enabled: false
+        softDeleteEnabled: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        tableType: core
+    CommercialCalibrationCreate:
+      type: object
+      required:
+      - calibratedPrice
+      - rationale
+      - approvedBy
+      properties:
+        calibratedPrice:
+          $ref: ./common/loadline-primitives.yaml#/components/schemas/Money
+        rationale:
+          type: string
+        narrative:
+          type: string
+        approvedBy:
+          type: string
+    DataEnvelopeCommercialCalibration:
+      type: object
+      required:
+      - data
+      - meta
+      properties:
+        data:
+          $ref: '#/components/schemas/CommercialCalibration'
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta
+    DataEnvelopePremiumComposition:
+      type: object
+      required:
+      - data
+      - meta
+      properties:
+        data:
+          $ref: '#/components/schemas/PremiumComposition'
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta
+    DataEnvelopePriceOffer:
+      type: object
+      required:
+      - data
+      - meta
+      properties:
+        data:
+          $ref: '#/components/schemas/PriceOffer'
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta
+    DataEnvelopeVariationEnvelope:
+      type: object
+      required:
+      - data
+      - meta
+      properties:
+        data:
+          $ref: '#/components/schemas/VariationEnvelope'
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta
+    ListEnvelopeVariationEnvelope:
+      type: object
+      required:
+      - data
+      - meta
+      properties:
+        data:
+          type: object
+          required:
+          - items
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/VariationEnvelope'
+            nextCursor:
+              type: string
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta
+    PremiumComposition:
+      type: object
+      required:
+      - id
+      - riskSubjectId
+      - technicalCost
+      properties:
+        id:
+          type: string
+        riskSubjectId:
+          type: string
+        productCode:
+          type: string
+        jurisdiction:
+          type: string
+        expectedClaims:
+          $ref: ./common/loadline-primitives.yaml#/components/schemas/Money
+        loadingForRisk:
+          $ref: ./common/loadline-primitives.yaml#/components/schemas/Money
+        loadingForExpense:
+          $ref: ./common/loadline-primitives.yaml#/components/schemas/Money
+        technicalCost:
+          $ref: ./common/loadline-primitives.yaml#/components/schemas/Money
+        contributingScoreIds:
+          type: array
+          items:
+            type: string
+        riskLoadingBasis:
+          type: object
+          properties:
+            assumedTouchpointFrequency:
+              type: string
+              example: monthly
+            touchpointEvidenceId:
+              type: string
+            chronicConditionLoading:
+              type: boolean
+        composedAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      x-dynamodb:
+        domain: COMPOSITION
+        entityType: PREMIUM_COMPOSITION
+        entityToken: PREMIUM_COMPOSITION
+        skPrefix: PREMIUM_COMPOSITION
+        pkPattern: entity
+        pkPatternTemplate: PREMIUM_COMPOSITION#${compositionId}
+        skPatternTemplate: METADATA
+        isChildEntity: false
+        gsi1Enabled: false
+        gsi2Enabled: false
+        gsi3Enabled: false
+        softDeleteEnabled: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        tableType: core
+    PremiumCompositionCreate:
+      type: object
+      required:
+      - riskSubjectId
+      - productCode
+      - jurisdiction
+      - contributingScoreIds
+      properties:
+        riskSubjectId:
+          type: string
+        productCode:
+          type: string
+        jurisdiction:
+          type: string
+        contributingScoreIds:
+          type: array
+          items:
+            type: string
+        assumedTouchpointFrequency:
+          type: string
+        touchpointEvidenceId:
+          type: string
+    PriceOffer:
+      type: object
+      required:
+      - id
+      - compositionId
+      - offeredPrice
+      - gateOutcome
+      properties:
+        id:
+          type: string
+        compositionId:
+          type: string
+        offeredPrice:
+          $ref: ./common/loadline-primitives.yaml#/components/schemas/Money
+        gateOutcome:
+          type: string
+          enum:
+          - within_envelope
+          - refused_magnitude
+          - refused_frequency
+          - refused_prohibited_driver
+        envelopeId:
+          type: string
+        validUntil:
+          type: string
+          format: date
+        issuedAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      x-dynamodb:
+        domain: COMPOSITION
+        entityType: PRICE_OFFER
+        entityToken: PRICE_OFFER
+        skPrefix: PRICE_OFFER
+        pkPattern: entity
+        pkPatternTemplate: PRICE_OFFER#${offerId}
+        skPatternTemplate: METADATA
+        isChildEntity: false
+        gsi1Enabled: false
+        gsi2Enabled: false
+        gsi3Enabled: false
+        softDeleteEnabled: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        tableType: core
+    VariationEnvelope:
+      type: object
+      required:
+      - id
+      - jurisdiction
+      - productCode
+      properties:
+        id:
+          type: string
+        jurisdiction:
+          type: string
+        productCode:
+          type: string
+        maxIncreasePercent:
+          type: number
+          format: float
+        maxDecreasePercent:
+          type: number
+          format: float
+        minRevisionIntervalDays:
+          type: integer
+          description: Shortest interval at which the filed structure permits change
+        prohibitedDrivers:
+          type: array
+          items:
+            type: string
+          example:
+          - inferred_price_sensitivity
+          - prior_shopping_behaviour
+        basis:
+          type: string
+          enum:
+          - rate_filing
+          - regulatory_rule
+          - policy_condition
+          - treaty_term
+        basisReference:
+          type: string
+        effectiveFrom:
+          type: string
+          format: date
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      x-dynamodb:
+        domain: COMPOSITION
+        entityType: VARIATION_ENVELOPE
+        entityToken: VARIATION_ENVELOPE
+        skPrefix: VARIATION_ENVELOPE
+        pkPattern: entity
+        pkPatternTemplate: VARIATION_ENVELOPE#${envelopeId}
+        skPatternTemplate: METADATA
+        isChildEntity: false
+        gsi1Enabled: false
+        gsi2Enabled: false
+        gsi3Enabled: false
+        softDeleteEnabled: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        tableType: core
+    VariationEnvelopeCreate:
+      type: object
+      required:
+      - jurisdiction
+      - productCode
+      - basis
+      properties:
+        jurisdiction:
+          type: string
+        productCode:
+          type: string
+        maxIncreasePercent:
+          type: number
+          format: float
+        maxDecreasePercent:
+          type: number
+          format: float
+        minRevisionIntervalDays:
+          type: integer
+        prohibitedDrivers:
+          type: array
+          items:
+            type: string
+        basis:
+          type: string
+        basisReference:
+          type: string

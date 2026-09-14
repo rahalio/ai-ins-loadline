@@ -1,0 +1,155 @@
+openapi: 3.1.0
+info:
+  title: Loadline — Engagement
+  version: 0.1.0
+  description: Engagement programmes, enrolment, and the touchpoint ledger.
+  license:
+    name: Proprietary
+  x-domain: eng
+  x-product-slug: ai-ins-loadline
+servers:
+- url: https://api.loadline.local
+  description: Local API
+- url: /
+  description: Relative
+security:
+- apiKey: []
+tags:
+- name: Engagement
+  description: Programmes, enrolment, and the touchpoint ledger
+paths:
+  /v1/engagement/programmes:
+    get:
+      operationId: listEngagementProgrammes
+      tags:
+      - Engagement
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: cursor
+        in: query
+        schema:
+          type: string
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 200
+          default: 50
+      - name: state
+        in: query
+        schema:
+          type: string
+          enum:
+          - design
+          - boundary_review
+          - live
+          - suspended
+          - closed
+      responses:
+        '200':
+          description: Engagement programmes with boundary review outcomes
+          content:
+            application/json:
+              schema:
+                $ref: ./engagement.schemas.yaml#/components/schemas/ListEnvelopeEngagementProgramme
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+      x-repository: EngagementProgramme
+      summary: List Engagement Programmes
+    post:
+      operationId: createEngagementProgramme
+      tags:
+      - Engagement
+      security:
+      - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./engagement.schemas.yaml#/components/schemas/EngagementProgrammeCreate
+      responses:
+        '201':
+          description: Programme created pending review against the medical-advice and inducement boundaries
+            for each jurisdiction.
+          content:
+            application/json:
+              schema:
+                $ref: ./engagement.schemas.yaml#/components/schemas/DataEnvelopeEngagementProgramme
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+      x-repository: EngagementProgramme
+      summary: Create Engagement Programme
+  /v1/engagement/touchpoints:
+    post:
+      operationId: recordTouchpointEvent
+      tags:
+      - Engagement
+      security:
+      - apiKey: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./engagement.schemas.yaml#/components/schemas/TouchpointEventCreate
+      responses:
+        '201':
+          description: Touchpoint recorded against the enrolment ledger
+          content:
+            application/json:
+              schema:
+                $ref: ./engagement.schemas.yaml#/components/schemas/DataEnvelopeTouchpointEvent
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+      x-repository: TouchpointEvent
+      summary: Record Touchpoint Event
+  /v1/engagement/enrolments/{enrolmentId}/frequency:
+    parameters:
+    - $ref: '#/components/parameters/EnrolmentId'
+    get:
+      operationId: getTouchpointFrequency
+      tags:
+      - Engagement
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Measured touchpoint frequency against the frequency assumed when the risk loading
+            was reduced.
+          content:
+            application/json:
+              schema:
+                $ref: ./engagement.schemas.yaml#/components/schemas/DataEnvelopeTouchpointFrequency
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+      x-repository: TouchpointEvent
+      summary: Get Touchpoint Frequency
+components:
+  securitySchemes:
+    apiKey:
+      $ref: ./common/security.yaml#/components/securitySchemes/apiKey
+    bearerAuth:
+      $ref: ./common/security.yaml#/components/securitySchemes/bearerAuth
+  parameters:
+    Cursor:
+      name: cursor
+      in: query
+      schema:
+        type: string
+    EnrolmentId:
+      name: enrolmentId
+      in: path
+      required: true
+      schema:
+        type: string
+    Limit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 200
+        default: 50

@@ -1,0 +1,288 @@
+openapi: 3.1.0
+info:
+  title: Loadline — Scoring schemas
+  version: 0.1.0
+  x-domain: sco
+paths: {}
+components:
+  schemas:
+    ConsentRecord:
+      type: object
+      required:
+      - id
+      - riskSubjectId
+      - dataCategory
+      - state
+      properties:
+        id:
+          type: string
+        riskSubjectId:
+          type: string
+        dataCategory:
+          $ref: ./common/loadline-primitives.yaml#/components/schemas/DataCategory
+        purposes:
+          type: array
+          items:
+            $ref: ./common/loadline-primitives.yaml#/components/schemas/ProcessingPurpose
+        state:
+          type: string
+          enum:
+          - granted
+          - withdrawn
+          - expired
+        lawfulBasis:
+          type: string
+          enum:
+          - explicit_consent
+          - contract
+          - legitimate_interest
+          - vital_interest
+        grantedAt:
+          type: string
+          format: date-time
+        withdrawnAt:
+          type: string
+          format: date-time
+        fallbackApplied:
+          type: string
+          description: Pricing and servicing fallback invoked on withdrawal
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      x-dynamodb:
+        domain: SCORING
+        entityType: CONSENT_RECORD
+        entityToken: CONSENT_RECORD
+        skPrefix: CONSENT_RECORD
+        pkPattern: entity
+        pkPatternTemplate: CONSENT_RECORD#${consentRecordId}
+        skPatternTemplate: METADATA
+        isChildEntity: false
+        gsi1Enabled: false
+        gsi2Enabled: false
+        gsi3Enabled: false
+        softDeleteEnabled: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        tableType: core
+    ConsentRecordCreate:
+      type: object
+      required:
+      - dataCategory
+      - state
+      - purposes
+      properties:
+        dataCategory:
+          $ref: ./common/loadline-primitives.yaml#/components/schemas/DataCategory
+        purposes:
+          type: array
+          items:
+            $ref: ./common/loadline-primitives.yaml#/components/schemas/ProcessingPurpose
+        state:
+          type: string
+          enum:
+          - granted
+          - withdrawn
+          - expired
+        lawfulBasis:
+          type: string
+    ConsentState:
+      type: object
+      properties:
+        riskSubjectId:
+          type: string
+        purpose:
+          $ref: ./common/loadline-primitives.yaml#/components/schemas/ProcessingPurpose
+        permittedCategories:
+          type: array
+          items:
+            $ref: ./common/loadline-primitives.yaml#/components/schemas/DataCategory
+        blockedCategories:
+          type: array
+          items:
+            $ref: ./common/loadline-primitives.yaml#/components/schemas/DataCategory
+        coverageNote:
+          type: string
+        resolvedAt:
+          type: string
+          format: date-time
+    DataEnvelopeConsentRecord:
+      type: object
+      required:
+      - data
+      - meta
+      properties:
+        data:
+          $ref: '#/components/schemas/ConsentRecord'
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta
+    DataEnvelopeConsentState:
+      type: object
+      required:
+      - data
+      - meta
+      properties:
+        data:
+          $ref: '#/components/schemas/ConsentState'
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta
+    DataEnvelopeScoreExplanation:
+      type: object
+      required:
+      - data
+      - meta
+      properties:
+        data:
+          $ref: '#/components/schemas/ScoreExplanation'
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta
+    DataEnvelopeScoreResult:
+      type: object
+      required:
+      - data
+      - meta
+      properties:
+        data:
+          $ref: '#/components/schemas/ScoreResult'
+        meta:
+          $ref: ./common/envelopes.yaml#/components/schemas/ResponseMeta
+    ScoreContribution:
+      type: object
+      required:
+      - modelId
+      - premiumTerm
+      properties:
+        modelId:
+          type: string
+        modelVersion:
+          type: string
+        premiumTerm:
+          $ref: ./common/loadline-primitives.yaml#/components/schemas/PremiumTerm
+        contributionValue:
+          type: number
+          format: double
+        unit:
+          type: string
+          enum:
+          - relative_multiplier
+          - absolute_amount
+          - rate_per_mille
+        confidence:
+          type: number
+          format: float
+    ScoreExplanation:
+      type: object
+      properties:
+        scoreId:
+          type: string
+        factors:
+          type: array
+          items:
+            type: object
+            properties:
+              factor:
+                type: string
+              ratingBasisMapping:
+                type: string
+              direction:
+                type: string
+                enum:
+                - increases_risk
+                - decreases_risk
+              magnitude:
+                type: number
+                format: float
+              permitId:
+                type: string
+        applicantDisclosureText:
+          type: string
+        humanReviewRoute:
+          type: string
+    ScoreRequest:
+      type: object
+      required:
+      - riskSubjectId
+      - jurisdiction
+      - productCode
+      - purpose
+      properties:
+        riskSubjectId:
+          type: string
+        applicationReference:
+          type: string
+        jurisdiction:
+          type: string
+        productCode:
+          type: string
+        purpose:
+          $ref: ./common/loadline-primitives.yaml#/components/schemas/ProcessingPurpose
+        features:
+          type: array
+          items:
+            $ref: ./common/loadline-primitives.yaml#/components/schemas/Feature
+    ScoreResult:
+      type: object
+      required:
+      - id
+      - riskSubjectId
+      - contributions
+      properties:
+        id:
+          type: string
+        riskSubjectId:
+          type: string
+        jurisdiction:
+          type: string
+        productCode:
+          type: string
+        contributions:
+          type: array
+          items:
+            $ref: '#/components/schemas/ScoreContribution'
+        featuresUsed:
+          type: array
+          items:
+            type: string
+        featuresSuppressed:
+          type: array
+          description: Features withheld for permitting or consent reasons
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              reason:
+                type: string
+                enum:
+                - prohibited_factor
+                - consent_absent
+                - restricted_health_data
+                - undetermined_permit
+        scoredAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      x-dynamodb:
+        domain: SCORING
+        entityType: SCORE_RESULT
+        entityToken: SCORE_RESULT
+        skPrefix: SCORE_RESULT
+        pkPattern: entity
+        pkPatternTemplate: SCORE_RESULT#${scoreId}
+        skPatternTemplate: METADATA
+        isChildEntity: false
+        gsi1Enabled: false
+        gsi2Enabled: false
+        gsi3Enabled: false
+        softDeleteEnabled: false
+        createdAtField: createdAt
+        updatedAtField: updatedAt
+        tableType: core

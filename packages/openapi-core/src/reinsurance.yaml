@@ -1,0 +1,108 @@
+openapi: 3.1.0
+info:
+  title: Loadline — Reinsurance
+  version: 0.1.0
+  description: Cession experience against the treaty pricing basis and human review of automated decisions.
+  license:
+    name: Proprietary
+  x-domain: rei
+  x-product-slug: ai-ins-loadline
+servers:
+- url: https://api.loadline.local
+  description: Local API
+- url: /
+  description: Relative
+security:
+- apiKey: []
+tags:
+- name: Reinsurance
+  description: Cession and cohort experience against the treaty pricing basis
+paths:
+  /v1/reinsurance/cession-experience:
+    get:
+      operationId: getCessionExperience
+      tags:
+      - Reinsurance
+      security:
+      - apiKey: []
+      - bearerAuth: []
+      parameters:
+      - name: treatyId
+        in: query
+        required: true
+        schema:
+          type: string
+      - name: cohortId
+        in: query
+        schema:
+          type: string
+      - name: period
+        in: query
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Cohort experience against the treaty pricing basis
+          content:
+            application/json:
+              schema:
+                $ref: ./reinsurance.schemas.yaml#/components/schemas/DataEnvelopeCessionExperience
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+      x-repository: CessionExperience
+      summary: Get Cession Experience
+  /v1/decisions/{decisionId}/review:
+    parameters:
+    - $ref: '#/components/parameters/DecisionId'
+    post:
+      operationId: requestHumanReview
+      tags:
+      - Reinsurance
+      security:
+      - apiKey: []
+      - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - requestedBy
+              - grounds
+              properties:
+                requestedBy:
+                  type: string
+                  enum:
+                  - applicant
+                  - policyholder
+                  - claimant
+                  - distributor
+                  - underwriter
+                grounds:
+                  type: string
+      responses:
+        '201':
+          description: Human review opened on an automated declinature, exclusion, or claims decision,
+            with the factor explanation attached.
+          content:
+            application/json:
+              schema:
+                $ref: ./reinsurance.schemas.yaml#/components/schemas/DataEnvelopeReviewDecision
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+      x-repository: ReviewDecision
+      summary: Request Human Review
+components:
+  securitySchemes:
+    apiKey:
+      $ref: ./common/security.yaml#/components/securitySchemes/apiKey
+    bearerAuth:
+      $ref: ./common/security.yaml#/components/securitySchemes/bearerAuth
+  parameters:
+    DecisionId:
+      name: decisionId
+      in: path
+      required: true
+      schema:
+        type: string

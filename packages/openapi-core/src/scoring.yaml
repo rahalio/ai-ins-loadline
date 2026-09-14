@@ -1,0 +1,147 @@
+openapi: 3.1.0
+info:
+  title: Loadline — Scoring
+  version: 0.1.0
+  description: Consent resolution, risk scoring, and score contributions attributed to one premium term.
+  license:
+    name: Proprietary
+  x-domain: sco
+  x-product-slug: ai-ins-loadline
+servers:
+- url: https://api.loadline.local
+  description: Local API
+- url: /
+  description: Relative
+security:
+- apiKey: []
+tags:
+- name: Scoring
+  description: Consent resolution, risk scoring, and score contributions
+paths:
+  /v1/risk-subjects/{riskSubjectId}/consent:
+    parameters:
+    - $ref: '#/components/parameters/RiskSubjectId'
+    get:
+      operationId: resolveConsentState
+      tags:
+      - Scoring
+      security:
+      - apiKey: []
+      - bearerAuth: []
+      parameters:
+      - name: purpose
+        in: query
+        schema:
+          $ref: ./common/loadline-primitives.yaml#/components/schemas/ProcessingPurpose
+      responses:
+        '200':
+          description: Which data sources may feed which decision, at point of use
+          content:
+            application/json:
+              schema:
+                $ref: ./scoring.schemas.yaml#/components/schemas/DataEnvelopeConsentState
+        '401':
+          $ref: ./common/responses.yaml#/components/responses/Unauthorized
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+      x-repository: ConsentRecord
+      summary: Resolve Consent State
+    post:
+      operationId: recordConsentChange
+      tags:
+      - Scoring
+      security:
+      - apiKey: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./scoring.schemas.yaml#/components/schemas/ConsentRecordCreate
+      responses:
+        '201':
+          description: Consent granted or withdrawn. A withdrawal triggers the defined pricing and servicing
+            fallback rather than a service failure.
+          content:
+            application/json:
+              schema:
+                $ref: ./scoring.schemas.yaml#/components/schemas/DataEnvelopeConsentRecord
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+      x-repository: ConsentRecord
+      summary: Record Consent Change
+  /v1/scores:
+    post:
+      operationId: scoreRiskSubject
+      tags:
+      - Scoring
+      security:
+      - apiKey: []
+      - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./scoring.schemas.yaml#/components/schemas/ScoreRequest
+      responses:
+        '200':
+          description: Score contributions, each attributed to one premium term
+          content:
+            application/json:
+              schema:
+                $ref: ./scoring.schemas.yaml#/components/schemas/DataEnvelopeScoreResult
+        '409':
+          description: Scoring refused. Raised when a required feature has no permitted-use position for
+            the jurisdiction, when consent is absent for the purpose, or when restricted health data such
+            as genetic results is in scope.
+          content:
+            application/json:
+              schema:
+                $ref: ./common/problem.yaml#/components/schemas/Problem
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+      x-repository: ScoreResult
+      summary: Score Risk Subject
+  /v1/scores/{scoreId}/explanation:
+    parameters:
+    - $ref: '#/components/parameters/ScoreId'
+    get:
+      operationId: getScoreExplanation
+      tags:
+      - Scoring
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Factor-level explanation mapped to the rating basis, suitable for an underwriter
+            and for disclosure to the applicant.
+          content:
+            application/json:
+              schema:
+                $ref: ./scoring.schemas.yaml#/components/schemas/DataEnvelopeScoreExplanation
+        '404':
+          $ref: ./common/responses.yaml#/components/responses/NotFound
+        default:
+          $ref: ./common/responses.yaml#/components/responses/Problem
+      x-repository: ScoreResult
+      summary: Get Score Explanation
+components:
+  securitySchemes:
+    apiKey:
+      $ref: ./common/security.yaml#/components/securitySchemes/apiKey
+    bearerAuth:
+      $ref: ./common/security.yaml#/components/securitySchemes/bearerAuth
+  parameters:
+    RiskSubjectId:
+      name: riskSubjectId
+      in: path
+      required: true
+      schema:
+        type: string
+    ScoreId:
+      name: scoreId
+      in: path
+      required: true
+      schema:
+        type: string
